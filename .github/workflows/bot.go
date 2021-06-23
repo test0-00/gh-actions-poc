@@ -94,3 +94,5 @@ func getReviewersEndpoint(owner, repo, pullRequestNum string) string {
 	return fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls/%s/reviews", owner, name, pullRequestNum)
 
 }
+
+// change
