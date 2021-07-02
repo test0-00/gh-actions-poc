@@ -15,7 +15,6 @@ import (
 // Config is used to configure Assign 
 type Config struct {
 	EventPath   string
-	Token       string
 	Reviewers   string
 	Environment *environment.Environment
 }

@@ -99,7 +99,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 	for _, requiredReviewer := range required {
 		rev, ok := currentReviews[requiredReviewer]
 		if !ok {
-			return trace.BadParameter("failed to assign all reviewers")
+			return trace.BadParameter("failed to assign all required reviewers")
 		}
 		if rev.status != ci.APPROVED {
 			return trace.BadParameter("all required reviewers have not yet approved")

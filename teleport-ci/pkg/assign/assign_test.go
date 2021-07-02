@@ -8,7 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPullRequestValid(t *testing.T) {
+func TestNew(t *testing.T) {
+
+}
+
+// TestNewPullRequestContextValid tests the unmarshalling of a valid pull request event
+func TestPullRequestContextValid(t *testing.T) {
 	str := []byte(fmt.Sprint(`{
 		"action": "opened",
 		"number": 2,
@@ -463,11 +468,17 @@ func TestPullRequestValid(t *testing.T) {
 		  "site_admin": false
 		}
 	  }`))
-	_, err := newPullRequestContext([]byte(str))
+	ctx, err := newPullRequestContext([]byte(str))
 	require.NoError(t, err)
+	require.Equal(t, 2, ctx.number)
+	require.Equal(t, "Codertocat", ctx.userLogin)
+	require.Equal(t, "Hello-World", ctx.repoName)
+	require.Equal(t, "Codertocat", ctx.repoOwner)
+
 }
 
-func TestPullRequestInvalid(t *testing.T) {
+// TestPullRequestContextInvalid tests the unmarshalling of an event that is not a pull request (i.e. review event)
+func TestPullRequestContextInvalid(t *testing.T) {
 	str := []byte(fmt.Sprint(`{
 		"action": "submitted",
 		"review": {
@@ -948,8 +959,10 @@ func TestPullRequestInvalid(t *testing.T) {
 		}
 	  }`))
 
-	_, err := newPullRequestContext([]byte(str))
+	ctx, err := newPullRequestContext([]byte(str))
 	require.Error(t, err)
+	require.Equal(t, PullRequestContext{}, ctx)
+
 }
 
 func TestAssign(t *testing.T) {

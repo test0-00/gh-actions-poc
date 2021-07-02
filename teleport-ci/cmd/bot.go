@@ -29,7 +29,7 @@ func main() {
 	client := github.NewClient(tc)
 	path := os.Getenv(ci.GITHUBEVENTPATH)
 	token := os.Getenv(ci.TOKEN)
-	reviewers := os.Getenv("ASSIGNMENTS")
+	reviewers := os.Getenv(ci.ASSIGNMENTS)
 
 	env, err := environment.New(environment.Config{Client: client,
 		Token:     token,

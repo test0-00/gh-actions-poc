@@ -8,6 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNew(t *testing.T) {
+
+}
+
+// TestNewReviewContextValid tests the unmarshalling of a valid review event 
 func TestNewReviewContextValid(t *testing.T) {
 	str := []byte(fmt.Sprint(`{
 		"action": "submitted",
@@ -489,10 +494,15 @@ func TestNewReviewContextValid(t *testing.T) {
 		}
 	  }`))
 
-	_, err := newReviewContext([]byte(str))
+	ctx, err := newReviewContext([]byte(str))
 	require.NoError(t, err)
+	require.Equal(t, 2, ctx.number)
+	require.Equal(t, "Codertocat", ctx.userLogin)
+	require.Equal(t, "Hello-World", ctx.repoName)
+	require.Equal(t, "Codertocat", ctx.repoOwner)
 }
 
+// TestNewReviewContextInvalid tests the unmarshalling of an event that is not a review (i.e. pull request event)
 func TestNewReviewContextInvalid(t *testing.T) {
 	str := []byte(fmt.Sprint(`{
 		"action": "opened",
@@ -948,8 +958,10 @@ func TestNewReviewContextInvalid(t *testing.T) {
 		  "site_admin": false
 		}
 	  }`))
-	_, err := newReviewContext([]byte(str))
+	ctx, err := newReviewContext([]byte(str))
 	require.Error(t, err)
+	require.Equal(t, ReviewContext{}, ctx)
+
 }
 
 func TestCheck(t *testing.T) {
@@ -1013,7 +1025,7 @@ func TestCheck(t *testing.T) {
 		{
 			obj: map[string]review{
 				"admin": {name: "admin", status: "COMMENTED"},
-				"foo": {name: "foo", status: "COMMENTED"},
+				"foo":   {name: "foo", status: "COMMENTED"},
 			},
 			env:      Check{reviewContext: ReviewContext{userLogin: "bar"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
 			checkErr: require.Error,
