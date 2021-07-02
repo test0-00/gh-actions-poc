@@ -2,46 +2,81 @@ package environment
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"os"
 
 	"github.com/google/go-github/github"
 	"github.com/gravitational/trace"
 )
 
+// Config ...
+type Config struct {
+	Client    *github.Client
+	Token     string
+	Reviewers string
+}
+
 // Environment ...
 type Environment struct {
-	PullRequest PullRequest `json:"pull_request"`
-	Secrets     Secrets
-	Client      *github.Client
+	Secrets   Secrets
+	Client    *github.Client
+	ReviewersRequest github.ReviewersRequest
 }
 
-// PullRequest ...
-type PullRequest struct {
-	Number int `json:"number"`
-	User   User
-	Head   Head `json:"head"`
+// CheckAndSetDefaults ...
+func (c *Config) CheckAndSetDefaults() error {
+	if c.Client == nil {
+		return trace.BadParameter("missing parameter Client")
+	}
+	if c.Token == "" {
+		return trace.BadParameter("missing parameter EventPath or is empty string")
+	}
+	if c.Reviewers == "" {
+		return trace.BadParameter("missing parameter Reviewers")
+	}
+	return nil
 }
 
-// User ...
-type User struct {
-	Login string `json:"login"`
+// New ...
+func New(c Config) (*Environment, error) {
+	var env Environment
+
+	err := c.CheckAndSetDefaults()
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
+	reviewers, err := UnmarshalReviewers(c.Reviewers)
+	if err != nil {
+		return &Environment{}, trace.Wrap(err)
+	}
+	env.Secrets.Assigners = reviewers
+	env.Secrets.Token = c.Token
+	env.Client = c.Client
+
+	return &env, nil
 }
 
-// Head ...
-type Head struct {
-	Repo Repo `json:"repo"`
+// GetReviewersForUser gets the required reviewers for the current user
+func (e *Environment) GetReviewersForUser(user string) ([]string, error) {
+	value, ok := e.Secrets.Assigners[user]
+	if !ok {
+		return nil, trace.BadParameter("author not found")
+	}
+	return value, nil
 }
 
-// Repo ...
-type Repo struct {
-	Name  string `json:"name"`
-	Owner Owner  `json:"owner"`
-}
+// UnmarshalReviewers ...
+func UnmarshalReviewers(str string) (map[string][]string, error) {
+	if str == "" {
+		return nil, trace.BadParameter("reviewers not found")
+	}
+	m := make(map[string][]string)
 
-// Owner ...
-type Owner struct {
-	Name string `json:"login"`
+	err := json.Unmarshal([]byte(str), &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
 // Secrets ...
@@ -55,40 +90,47 @@ type review struct {
 	status   string
 }
 
-// NewPullRequest unmarshals pull request metadata from json file given the path
-func (e *Environment) NewPullRequest(path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return trace.Wrap(err)
-	}
-	body, err := ioutil.ReadAll(file)
-	if err != nil {
-		return trace.Wrap(err)
-	}
-	return e.newPullRequest(body)
+// ReviewMetadata ...
+type ReviewMetadata struct {
+	Review      Review      `json:"review"`
+	Repository  Repository  `json:"repository"`
+	PullRequest PullRequest `json:"pull_request"`
 }
 
-func (e *Environment) newPullRequest(body []byte) error {
-	err := json.Unmarshal(body, e)
-	if err != nil {
-		return trace.Wrap(err)
-	}
-	pullReq := e.PullRequest
-	if pullReq.Number == 0 || pullReq.User.Login == "" || pullReq.Head.Repo.Name == "" || pullReq.Head.Repo.Owner.Name == "" {
-		return trace.BadParameter("insufficient data obatined")
-	}
-	return nil
+// Review ...
+type Review struct {
+	User User `json:"user"`
 }
 
-func UnmarshalReviewers(str string) (map[string][]string, error) {
-	if str == "" {
-		return nil, trace.BadParameter("reviewers not found")
-	}
-	m := make(map[string][]string)
+// User ...
+type User struct {
+	Login string `json:"login"`
+}
 
-	err := json.Unmarshal([]byte(str), &m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
+// PullRequest ...
+type PullRequest struct {
+	Number int `json:"number"`
+}
+
+// PRMetadata ...
+type PRMetadata struct {
+	Number      int        `json:"number"`
+	PullRequest PR         `json:"pull_request"`
+	Repository  Repository `json:"repository"`
+}
+
+// PR ...
+type PR struct {
+	User User
+}
+
+// Repository ...
+type Repository struct {
+	Name  string `json:"name"`
+	Owner Owner  `json:"owner"`
+}
+
+// Owner ...
+type Owner struct {
+	Name string `json:"login"`
 }
