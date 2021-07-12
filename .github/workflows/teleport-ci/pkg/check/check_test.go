@@ -1,7 +1,6 @@
 package check
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -16,7 +15,7 @@ func TestNewCheck(t *testing.T) {
 	env, err := environment.New(environment.Config{
 		Client:    github.NewClient(nil),
 		Token:     "12345",
-		Reviewers: fmt.Sprint(`{"foo": ["bar", "baz"]}`),
+		Reviewers: `{"foo": ["bar", "baz"]}`,
 	})
 	require.NoError(t, err)
 	// Config with invalid path
@@ -104,7 +103,7 @@ func TestCheck(t *testing.T) {
 	env, err := environment.New(environment.Config{
 		Client:    github.NewClient(nil),
 		Token:     "12345",
-		Reviewers: fmt.Sprint(`{"foo": ["bar", "baz"], "baz": ["foo", "car"], "bar": ["admin", "foo"]}`),
+		Reviewers: `{"foo": ["bar", "baz"], "baz": ["foo", "car"], "bar": ["admin", "foo"]}`,
 	})
 	require.NoError(t, err)
 
@@ -140,7 +139,6 @@ func TestCheck(t *testing.T) {
 			checkErr: require.NoError,
 			desc:     "pull request with all required approvals",
 		},
-
 		{
 			obj: map[string]review{
 				"foo": {name: "foo", status: "APPROVED"},
@@ -167,7 +165,7 @@ func TestCheck(t *testing.T) {
 			},
 			env:      Check{reviewContext: &ReviewContext{userLogin: "bar"}, Environment: env},
 			checkErr: require.Error,
-			desc:     "pull request where all required reviewers reviewed, but does not have all required approvals",
+			desc:     "pull request does not have all required approvals",
 		},
 	}
 

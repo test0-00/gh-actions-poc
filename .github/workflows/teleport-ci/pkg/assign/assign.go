@@ -93,21 +93,6 @@ func (e *Assign) assign(currentReviewers map[string]bool) error {
 	return nil
 }
 
-func (e *Assign) verify() error {
-	if e.pullContext == nil {
-		return trace.BadParameter("missing pull request data.")
-	}
-	if e.pullContext.userLogin == "" {
-		return trace.BadParameter("current user not found.")
-	}
-	return nil
-}
-
-type review struct {
-	reviewer string
-	status   string
-}
-
 // NewPullRequestContext creates a new instance of PullRequestContext
 func NewPullRequestContext(path string) (*PullRequestContext, error) {
 	file, err := os.Open(path)

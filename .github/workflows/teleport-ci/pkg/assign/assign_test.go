@@ -1,7 +1,6 @@
 package assign
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -16,7 +15,7 @@ func TestNewAssign(t *testing.T) {
 	env, err := environment.New(environment.Config{
 		Client:    github.NewClient(nil),
 		Token:     "12345",
-		Reviewers: fmt.Sprint(`{"foo": ["bar", "baz"]}`),
+		Reviewers: `{"foo": ["bar", "baz"]}`,
 	})
 	require.NoError(t, err)
 
@@ -101,7 +100,7 @@ func TestAssign(t *testing.T) {
 	env, err := environment.New(environment.Config{
 		Client:    github.NewClient(nil),
 		Token:     "12345",
-		Reviewers: fmt.Sprint(`{"foo": ["bar", "baz"], "baz": ["foo", "car"], "bar": ["admin", "foo"]}`),
+		Reviewers: `{"foo": ["bar", "baz"], "baz": ["foo", "car"], "bar": ["admin", "foo"]}`,
 	})
 	require.NoError(t, err)
 

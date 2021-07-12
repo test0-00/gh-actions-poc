@@ -44,7 +44,7 @@ func New(c Config) (*Environment, error) {
 		return nil, trace.Wrap(err)
 	}
 
-	reviewers, err := UnmarshalReviewers(c.Reviewers)
+	reviewers, err := unmarshalReviewers(c.Reviewers)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -64,8 +64,7 @@ func (e *Environment) GetReviewersForUser(user string) ([]string, error) {
 	return value, nil
 }
 
-// UnmarshalReviewers ...
-func UnmarshalReviewers(str string) (map[string][]string, error) {
+func unmarshalReviewers(str string) (map[string][]string, error) {
 	if str == "" {
 		return nil, trace.BadParameter("reviewers not found")
 	}

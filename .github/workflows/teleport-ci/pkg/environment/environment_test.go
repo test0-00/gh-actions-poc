@@ -96,8 +96,7 @@ func TestUnmarshalReviewers(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-
-			res, err := UnmarshalReviewers(test.obj)
+			res, err := unmarshalReviewers(test.obj)
 			test.checkErr(t, err)
 			require.EqualValues(t, test.expected, res)
 		})

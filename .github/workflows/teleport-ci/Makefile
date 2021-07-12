@@ -10,3 +10,6 @@ check:
 # Runs all go tests
 test: 
 	go test ./...
+
+lint: 
+	golangci-lint run
