@@ -26,6 +26,7 @@ func main() {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
+	
 	// Getting event object path and token
 	path := os.Getenv(ci.GITHUBEVENTPATH)
 	token := os.Getenv(ci.TOKEN)
@@ -53,7 +54,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
+		
 	case "check-reviewers":
 		log.Println("Checking reviewers...")
 		cfg := check.Config{
