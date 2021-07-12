@@ -14,10 +14,10 @@ type Config struct {
 	Reviewers string
 }
 
-// Environment contains information about the environment 
+// Environment contains information about the environment
 type Environment struct {
-	Secrets   Secrets
-	Client    *github.Client
+	Secrets          Secrets
+	Client           *github.Client
 	ReviewersRequest github.ReviewersRequest
 }
 
@@ -35,7 +35,7 @@ func (c *Config) CheckAndSetDefaults() error {
 	return nil
 }
 
-// New ...
+// New creates a new instance of environment
 func New(c Config) (*Environment, error) {
 	var env Environment
 
@@ -46,7 +46,7 @@ func New(c Config) (*Environment, error) {
 
 	reviewers, err := UnmarshalReviewers(c.Reviewers)
 	if err != nil {
-		return &Environment{}, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 	env.Secrets.Assigners = reviewers
 	env.Secrets.Token = c.Token
@@ -79,58 +79,54 @@ func UnmarshalReviewers(str string) (map[string][]string, error) {
 	return m, nil
 }
 
-// Secrets ...
+// Secrets contains environment secrets
 type Secrets struct {
 	Assigners map[string][]string
 	Token     string
 }
 
-type review struct {
-	reviewer string
-	status   string
-}
-
-// ReviewMetadata ...
+// ReviewMetadata contains metadata about the pull request
+// review (used for the pull request review event)
 type ReviewMetadata struct {
 	Review      Review      `json:"review"`
 	Repository  Repository  `json:"repository"`
 	PullRequest PullRequest `json:"pull_request"`
 }
 
-// Review ...
+// Review contains information about the pull request review
 type Review struct {
 	User User `json:"user"`
 }
 
-// User ...
+// User contains information about the user
 type User struct {
 	Login string `json:"login"`
 }
 
-// PullRequest ...
+// PullRequest conatins information about the pull request (used for pull request *review* event)
 type PullRequest struct {
 	Number int `json:"number"`
 }
 
-// PRMetadata ...
+// PRMetadata contains metadata about the pull request (used for the pull request event)
 type PRMetadata struct {
 	Number      int        `json:"number"`
 	PullRequest PR         `json:"pull_request"`
 	Repository  Repository `json:"repository"`
 }
 
-// PR ...
+// PR contains information about the pull request (used for the pull request event)
 type PR struct {
 	User User
 }
 
-// Repository ...
+// Repository contains information about the repository
 type Repository struct {
 	Name  string `json:"name"`
 	Owner Owner  `json:"owner"`
 }
 
-// Owner ...
+// Owner contains information about the repository owner
 type Owner struct {
 	Name string `json:"login"`
 }

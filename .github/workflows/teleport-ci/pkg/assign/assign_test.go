@@ -1,20 +1,143 @@
 package assign
 
 import (
-	"fmt"
-	"gh-actions-poc/teleport-ci/pkg/environment"
+	"io/ioutil"
+	"os"
 	"testing"
 
+	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/environment"
+
+	"github.com/google/go-github/github"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNew(t *testing.T) {
+func TestNewAssign(t *testing.T) {
+	environment := &environment.Environment{
+		Secrets:          environment.Secrets{Token: "123456", Assigners: map[string][]string{"foo": {"bar", "baz"}}},
+		ReviewersRequest: github.ReviewersRequest{}, Client: github.NewClient(nil),
+	}
+	// Config with invalid path
+	config := Config{
+		EventPath:   "path/to/file.json",
+		Environment: environment,
+	}
+	assign, err := New(config)
+	require.Error(t, err)
+	require.Nil(t, assign)
 
+	f, err := ioutil.TempFile("", "assign")
+	require.NoError(t, err)
+	filePath := f.Name()
+	defer os.Remove(f.Name())
+	_, err = f.Write([]byte(validString))
+	require.NoError(t, err)
+
+	// Config with a nil Environment and valid path
+	config = Config{
+		EventPath: filePath,
+	}
+	assign, err = New(config)
+	require.Error(t, err)
+	require.Nil(t, assign)
+
+	// Valid config
+	f, err = ioutil.TempFile("", "assign")
+	require.NoError(t, err)
+	filePath = f.Name()
+	defer os.Remove(f.Name())
+	_, err = f.Write([]byte(validString))
+	require.NoError(t, err)
+	config = Config{
+		EventPath:   filePath,
+		Environment: environment,
+	}
+	assign, err = New(config)
+	require.NoError(t, err)
+	require.Equal(t, environment, assign.Environment)
+
+	// Valid config, wrong event (invalid json format)
+	f, err = ioutil.TempFile("", "invalid-assign")
+	require.NoError(t, err)
+	filePath = f.Name()
+	defer os.Remove(f.Name())
+	_, err = f.Write([]byte(invalidString))
+	require.NoError(t, err)
+	config = Config{
+		EventPath:   filePath,
+		Environment: environment,
+	}
+	assign, err = New(config)
+	require.Error(t, err)
+	require.Nil(t, assign)
 }
 
 // TestNewPullRequestContextValid tests the unmarshalling of a valid pull request event
 func TestPullRequestContextValid(t *testing.T) {
-	str := []byte(fmt.Sprint(`{
+	ctx, err := newPullRequestContext([]byte(validString))
+	require.NoError(t, err)
+	require.Equal(t, 2, ctx.number)
+	require.Equal(t, "Codertocat", ctx.userLogin)
+	require.Equal(t, "Hello-World", ctx.repoName)
+	require.Equal(t, "Codertocat", ctx.repoOwner)
+
+}
+
+// TestPullRequestContextInvalid tests the unmarshalling of an event that is not a pull request (i.e. review event)
+func TestPullRequestContextInvalid(t *testing.T) {
+	prCtx, err := newPullRequestContext([]byte(invalidString))
+	require.Error(t, err)
+	require.Nil(t, prCtx)
+}
+
+func TestAssign(t *testing.T) {
+	m := map[string][]string{
+		"foo": {"bar", "baz"},
+		"baz": {"foo", "car"},
+		"bar": {"admin", "foo"},
+	}
+
+	tests := []struct {
+		obj      map[string]bool
+		env      Assign
+		checkErr require.ErrorAssertionFunc
+		desc     string
+	}{
+		{
+			obj:      map[string]bool{},
+			env:      Assign{pullContext: &PullRequestContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+			checkErr: require.Error,
+			desc:     "no reviewers have been assigned",
+		},
+		{
+			obj: map[string]bool{
+				"bar": true,
+				"baz": true,
+			},
+			env: Assign{pullContext: &PullRequestContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+
+			checkErr: require.NoError,
+			desc:     "assigning was successful",
+		},
+		{
+			obj: map[string]bool{
+				"bar": true,
+			},
+			env:      Assign{pullContext: &PullRequestContext{userLogin: "random"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+			checkErr: require.Error,
+			desc:     "user does not exist in assigners",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			err := test.env.assign(test.obj)
+			test.checkErr(t, err)
+		})
+	}
+}
+
+const (
+	validString = `{
 		"action": "opened",
 		"number": 2,
 		"pull_request": {
@@ -467,19 +590,9 @@ func TestPullRequestContextValid(t *testing.T) {
 		  "type": "User",
 		  "site_admin": false
 		}
-	  }`))
-	ctx, err := newPullRequestContext([]byte(str))
-	require.NoError(t, err)
-	require.Equal(t, 2, ctx.number)
-	require.Equal(t, "Codertocat", ctx.userLogin)
-	require.Equal(t, "Hello-World", ctx.repoName)
-	require.Equal(t, "Codertocat", ctx.repoOwner)
+	}`
 
-}
-
-// TestPullRequestContextInvalid tests the unmarshalling of an event that is not a pull request (i.e. review event)
-func TestPullRequestContextInvalid(t *testing.T) {
-	str := []byte(fmt.Sprint(`{
+	invalidString = `{
 		"action": "submitted",
 		"review": {
 		  "id": 237895671,
@@ -957,57 +1070,5 @@ func TestPullRequestContextInvalid(t *testing.T) {
 		  "type": "User",
 		  "site_admin": false
 		}
-	  }`))
-
-	ctx, err := newPullRequestContext([]byte(str))
-	require.Error(t, err)
-	require.Equal(t, PullRequestContext{}, ctx)
-
-}
-
-func TestAssign(t *testing.T) {
-	m := map[string][]string{
-		"foo": {"bar", "baz"},
-		"baz": {"foo", "car"},
-		"bar": {"admin", "foo"},
-	}
-
-	tests := []struct {
-		obj      map[string]bool
-		env      Assign
-		checkErr require.ErrorAssertionFunc
-		desc     string
-	}{
-		{
-			obj:      map[string]bool{},
-			env:      Assign{Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
-			checkErr: require.Error,
-			desc:     "empty user and map",
-		},
-		{
-			obj: map[string]bool{
-				"bar": true,
-				"baz": true,
-			},
-			env: Assign{pullContext: PullRequestContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
-
-			checkErr: require.NoError,
-			desc:     "assigning was successful",
-		},
-		{
-			obj: map[string]bool{
-				"bar": true,
-			},
-			env:      Assign{pullContext: PullRequestContext{userLogin: "random"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
-			checkErr: require.Error,
-			desc:     "user does not exist in assigners",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.desc, func(t *testing.T) {
-			err := test.env.assign(test.obj)
-			test.checkErr(t, err)
-		})
-	}
-}
+	}`
+)

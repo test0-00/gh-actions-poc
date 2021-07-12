@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNew(t *testing.T) {
+func TestNewEnvironment(t *testing.T) {
 
 	tests := []struct {
 		cfg      Config
@@ -15,6 +15,15 @@ func TestNew(t *testing.T) {
 		expected *Environment
 		desc     string
 	}{
+		{
+			cfg: Config{
+				Reviewers: `{"foo": ["bar", "baz"]}`,
+				Client:    github.NewClient(nil),
+			},
+			checkErr: require.Error,
+			desc:     "invalid Environment config with no token",
+			expected: nil,
+		},
 		{
 			cfg: Config{
 				Reviewers: `{"foo": ["bar", "baz"]}`,
@@ -35,8 +44,8 @@ func TestNew(t *testing.T) {
 				Client:    github.NewClient(nil),
 			},
 			checkErr: require.Error,
-			desc:     "invalid reviewer field for Environment config",
-			expected: &Environment{},
+			desc:     "invalid assigners object format",
+			expected: nil,
 		},
 		{
 			cfg: Config{
@@ -45,14 +54,13 @@ func TestNew(t *testing.T) {
 			},
 			checkErr: require.Error,
 			desc:     "invalid config with no client",
-			expected: &Environment{},
+			expected: nil,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			res, err := New(test.cfg)
+			_, err := New(test.cfg)
 			test.checkErr(t, err)
-			require.Equal(t, res.Secrets.Assigners, test.expected.Secrets.Assigners)
 		})
 	}
 }

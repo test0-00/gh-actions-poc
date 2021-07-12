@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	ci "gh-actions-poc/teleport-ci"
-	"gh-actions-poc/teleport-ci/pkg/environment"
+	ci "github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci"
+	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/environment"
 
 	"github.com/google/go-github/github"
 	"github.com/gravitational/trace"
@@ -21,7 +21,7 @@ type Config struct {
 	Environment *environment.Environment
 }
 
-// Check ...
+// Check checks assigned reviewers for a pull request on a review event
 type Check struct {
 	Environment   *environment.Environment
 	reviewContext ReviewContext
@@ -37,7 +37,7 @@ func New(c Config) (*Check, error) {
 	}
 	revContext, err := NewReviewContext(c.EventPath)
 	if err != nil {
-		return &Check{}, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 	ch.reviewContext = revContext
 	ch.Environment = c.Environment
