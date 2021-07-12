@@ -84,9 +84,9 @@ func TestNewReviewContextValid(t *testing.T) {
 
 // TestNewReviewContextInvalid tests the unmarshalling of an event that is not a review (i.e. pull request event)
 func TestNewReviewContextInvalid(t *testing.T) {
-	ctx, err := newReviewContext([]byte(invalidString))
+	revCtx, err := newReviewContext([]byte(invalidString))
 	require.Error(t, err)
-	require.Equal(t, ReviewContext{}, ctx)
+	require.Nil(t, revCtx)
 
 }
 
@@ -105,7 +105,7 @@ func TestCheck(t *testing.T) {
 
 		{
 			obj:      map[string]review{},
-			env:      Check{reviewContext: ReviewContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+			env:      Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
 			checkErr: require.Error,
 			desc:     "pull request with no reviews",
 		},
@@ -114,7 +114,7 @@ func TestCheck(t *testing.T) {
 			obj: map[string]review{
 				"bar": {name: "bar", status: "APPROVED"},
 			},
-			env:      Check{reviewContext: ReviewContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+			env:      Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
 			checkErr: require.Error,
 			desc:     "pull request with one one review and approval, but not all required approvals",
 		},
@@ -124,7 +124,7 @@ func TestCheck(t *testing.T) {
 				"bar": {name: "bar", status: "APPROVED"},
 				"baz": {name: "baz", status: "APPROVED"},
 			},
-			env:      Check{reviewContext: ReviewContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+			env:      Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
 			checkErr: require.NoError,
 			desc:     "pull request with all required approvals",
 		},
@@ -134,7 +134,7 @@ func TestCheck(t *testing.T) {
 				"foo": {name: "foo", status: "APPROVED"},
 				"car": {name: "car", status: "COMMENTED"},
 			},
-			env:      Check{reviewContext: ReviewContext{userLogin: "baz"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+			env:      Check{reviewContext: &ReviewContext{userLogin: "baz"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
 			checkErr: require.Error,
 			desc:     "pull request with one approval and one comment review",
 		},
@@ -144,7 +144,7 @@ func TestCheck(t *testing.T) {
 				"foo": {name: "foo", status: "APPROVED"},
 				"car": {name: "car", status: "COMMENTED"},
 			},
-			env:      Check{reviewContext: ReviewContext{userLogin: "baz"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+			env:      Check{reviewContext: &ReviewContext{userLogin: "baz"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
 			checkErr: require.Error,
 			desc:     "pull request with unknown author",
 		},
@@ -153,7 +153,7 @@ func TestCheck(t *testing.T) {
 				"admin": {name: "admin", status: "COMMENTED"},
 				"foo":   {name: "foo", status: "COMMENTED"},
 			},
-			env:      Check{reviewContext: ReviewContext{userLogin: "bar"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
+			env:      Check{reviewContext: &ReviewContext{userLogin: "bar"}, Environment: &environment.Environment{Secrets: environment.Secrets{Assigners: m}}},
 			checkErr: require.Error,
 			desc:     "pull request where all required reviewers reviewed, but does not have all required approvals",
 		},

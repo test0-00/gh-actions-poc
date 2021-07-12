@@ -27,10 +27,10 @@ type Assign struct {
 // CheckAndSetDefaults verifies configuration and sets defaults
 func (c *Config) CheckAndSetDefaults() error {
 	if c.Environment == nil {
-		return trace.BadParameter("missing parameter Environment")
+		return trace.BadParameter("missing parameter Environment.")
 	}
 	if c.EventPath == "" {
-		return trace.BadParameter("missing parameter EventPath")
+		return trace.BadParameter("missing parameter EventPath.")
 	}
 	return nil
 }
@@ -59,7 +59,7 @@ func (e *Assign) Assign() error {
 		return trace.BadParameter("missing pull request data.")
 	}
 	if e.pullContext.userLogin == "" {
-		return trace.BadParameter("there is no current user.")
+		return trace.BadParameter("current user not found.")
 	}
 	// Getting and setting reviewers for author of pull request
 	r, err := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
@@ -84,7 +84,7 @@ func (e *Assign) Assign() error {
 	return e.assign(reqs)
 }
 
-// assign gets the reviewers for the current user event
+// assign verifies reviewers are assigned
 func (e *Assign) assign(currentReviewers map[string]bool) error {
 	required, ok := e.Environment.Secrets.Assigners[e.pullContext.userLogin]
 	if !ok {
@@ -123,7 +123,7 @@ func newPullRequestContext(body []byte) (*PullRequestContext, error) {
 		return nil, trace.Wrap(err)
 	}
 	if pr.Number == 0 || pr.PullRequest.User.Login == "" || pr.Repository.Name == "" || pr.Repository.Owner.Name == "" {
-		return nil, trace.BadParameter("insufficient data obatined")
+		return nil, trace.BadParameter("insufficient data obatined.")
 	}
 	return &PullRequestContext{
 		number:    pr.Number,
