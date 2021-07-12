@@ -48,8 +48,8 @@ func New(c Config) (*Environment, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	env.Secrets.Assigners = reviewers
-	env.Secrets.Token = c.Token
+	env.Secrets.reviewers = reviewers
+	env.Secrets.token = c.Token
 	env.Client = c.Client
 
 	return &env, nil
@@ -57,7 +57,7 @@ func New(c Config) (*Environment, error) {
 
 // GetReviewersForUser gets the required reviewers for the current user
 func (e *Environment) GetReviewersForUser(user string) ([]string, error) {
-	value, ok := e.Secrets.Assigners[user]
+	value, ok := e.Secrets.reviewers[user]
 	if !ok {
 		return nil, trace.BadParameter("author not found")
 	}
@@ -81,8 +81,8 @@ func UnmarshalReviewers(str string) (map[string][]string, error) {
 
 // Secrets contains environment secrets
 type Secrets struct {
-	Assigners map[string][]string
-	Token     string
+	reviewers map[string][]string
+	token     string
 }
 
 // ReviewMetadata contains metadata about the pull request

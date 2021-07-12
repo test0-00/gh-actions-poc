@@ -55,12 +55,7 @@ func New(c Config) (*Assign, error) {
 
 // Assign assigns reviewers to the pull request
 func (e *Assign) Assign() error {
-	if e.pullContext == nil {
-		return trace.BadParameter("missing pull request data.")
-	}
-	if e.pullContext.userLogin == "" {
-		return trace.BadParameter("current user not found.")
-	}
+
 	// Getting and setting reviewers for author of pull request
 	r, err := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
 	if err != nil {
@@ -86,14 +81,24 @@ func (e *Assign) Assign() error {
 
 // assign verifies reviewers are assigned
 func (e *Assign) assign(currentReviewers map[string]bool) error {
-	required, ok := e.Environment.Secrets.Assigners[e.pullContext.userLogin]
-	if !ok {
-		return trace.BadParameter("user does not exist or is an external contributor.")
+	required, err := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
+	if err != nil {
+		return trace.Wrap(err)
 	}
 	for _, requiredReviewer := range required {
 		if !currentReviewers[requiredReviewer] {
 			return trace.BadParameter("failed to assign all reviewers.")
 		}
+	}
+	return nil
+}
+
+func (e *Assign) verify() error {
+	if e.pullContext == nil {
+		return trace.BadParameter("missing pull request data.")
+	}
+	if e.pullContext.userLogin == "" {
+		return trace.BadParameter("current user not found.")
 	}
 	return nil
 }

@@ -33,7 +33,7 @@ func TestNewEnvironment(t *testing.T) {
 			checkErr: require.NoError,
 			desc:     "valid Environment config",
 			expected: &Environment{
-				Secrets:          Secrets{Token: "123456", Assigners: map[string][]string{"foo": {"bar", "baz"}}},
+				Secrets:          Secrets{token: "123456", reviewers: map[string][]string{"foo": {"bar", "baz"}}},
 				ReviewersRequest: github.ReviewersRequest{}, Client: github.NewClient(nil),
 			},
 		},

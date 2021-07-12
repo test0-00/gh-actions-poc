@@ -30,7 +30,6 @@ type Check struct {
 // New returns a new instance of  Check
 func New(c Config) (*Check, error) {
 	var ch Check
-
 	err := c.CheckAndSetDefaults()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -89,12 +88,14 @@ type review struct {
 // check checks to see if all the required reviewers have approved
 func (c *Check) check(currentReviews map[string]review) error {
 	if len(currentReviews) == 0 {
+
 		return trace.BadParameter("pull request has no reviews.")
 	}
-	required, ok := c.Environment.Secrets.Assigners[c.reviewContext.userLogin]
-	if !ok {
-		return trace.BadParameter("author is unknown or is an external contributor.")
+	required, err := c.Environment.GetReviewersForUser(c.reviewContext.userLogin)
+	if err != nil {
+		return trace.Wrap(err)
 	}
+
 	for _, requiredReviewer := range required {
 		rev, ok := currentReviews[requiredReviewer]
 		if !ok {
@@ -107,7 +108,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 	return nil
 }
 
-// NewReviewContext unmarshals pull request metadata from json file given the path
+// NewReviewContext unmarshals pull request review metadata from json file given the path
 func NewReviewContext(path string) (*ReviewContext, error) {
 	file, err := os.Open(path)
 	if err != nil {
