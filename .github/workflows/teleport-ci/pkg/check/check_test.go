@@ -7,7 +7,7 @@ import (
 
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/environment"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v37/github"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,28 +74,28 @@ func TestNewCheck(t *testing.T) {
 }
 
 // TestNewReviewContextValid tests the unmarshalling of a valid review event
-func TestNewReviewContextValid(t *testing.T) {
-	ctx, err := newReviewContext([]byte(validString))
+func TestSetReviewContextValid(t *testing.T) {
+	ch := Check{}
+	err := ch.setReviewContext([]byte(validString))
 	require.NoError(t, err)
-	require.Equal(t, 2, ctx.number)
-	require.Equal(t, "Codertocat", ctx.userLogin)
-	require.Equal(t, "Hello-World", ctx.repoName)
-	require.Equal(t, "Codertocat", ctx.repoOwner)
+	require.Equal(t, 2, ch.reviewContext.number)
+	require.Equal(t, "Codertocat", ch.reviewContext.userLogin)
+	require.Equal(t, "Hello-World", ch.reviewContext.repoName)
+	require.Equal(t, "Codertocat", ch.reviewContext.repoOwner)
 }
 
 // TestNewReviewContextInvalid tests the unmarshalling of an event that is not a review (i.e. pull request event)
-func TestNewReviewContextInvalid(t *testing.T) {
-	revCtx, err := newReviewContext([]byte(invalidString))
-	require.Error(t, err)
-	require.Nil(t, revCtx)
+func TestSetReviewContextInvalid(t *testing.T) {
+	ch := Check{}
 
-	revCtx, err = newReviewContext([]byte(""))
+	err := ch.setReviewContext([]byte(invalidString))
 	require.Error(t, err)
-	require.Nil(t, revCtx)
 
-	revCtx, err = newReviewContext([]byte(invalidStringNoLogin))
+	err = ch.setReviewContext([]byte(""))
 	require.Error(t, err)
-	require.Nil(t, revCtx)
+
+	err = ch.setReviewContext([]byte(invalidStringNoLogin))
+	require.Error(t, err)
 }
 
 func TestCheck(t *testing.T) {

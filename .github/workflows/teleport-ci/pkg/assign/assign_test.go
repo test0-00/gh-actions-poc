@@ -7,7 +7,7 @@ import (
 
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/environment"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v37/github"
 	"github.com/stretchr/testify/require"
 )
 

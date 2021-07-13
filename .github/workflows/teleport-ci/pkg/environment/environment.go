@@ -3,7 +3,7 @@ package environment
 import (
 	"encoding/json"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v37/github"
 	"github.com/gravitational/trace"
 )
 
@@ -55,12 +55,13 @@ func New(c Config) (*Environment, error) {
 }
 
 // GetReviewersForUser gets the required reviewers for the current user
-func (e *Environment) GetReviewersForUser(user string) ([]string, error) {
+func (e *Environment) GetReviewersForUser(user string) []string {
 	value, ok := e.Secrets.reviewers[user]
 	if !ok {
-		return nil, trace.BadParameter("author not found.")
+		// Author is external, return default reviewers
+		return []string{"russjones", "r0mant"}
 	}
-	return value, nil
+	return value
 }
 
 func unmarshalReviewers(str string) (map[string][]string, error) {
@@ -97,6 +98,17 @@ type ReviewMetadata struct {
 	Review      Review      `json:"review"`
 	Repository  Repository  `json:"repository"`
 	PullRequest PullRequest `json:"pull_request"`
+}
+
+type PushMetadata struct {
+	Pusher Pusher `json:"pusher"`
+	Repository Repository `json:"repository"`
+	// After is the SHA of the most recent commit on ref after the push.
+	After string `json:"after"`
+}
+
+type Pusher struct {
+	Name string `json:"name"`
 }
 
 // Secrets contains environment secrets

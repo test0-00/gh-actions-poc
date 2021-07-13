@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v37/github"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/environment"
 	"github.com/gravitational/trace"
 )
@@ -54,10 +54,8 @@ func New(c Config) (*Assign, error) {
 // Assign assigns reviewers to the pull request
 func (e *Assign) Assign() error {
 	// Getting and setting reviewers for author of pull request
-	r, err := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
-	if err != nil {
-		return trace.Wrap(err)
-	}
+	r := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
+
 	client := e.Environment.Client
 	// Assigning reviewers to pull request
 	pr, _, err := client.PullRequests.RequestReviewers(context.TODO(),
@@ -77,10 +75,8 @@ func (e *Assign) Assign() error {
 
 // assign verifies reviewers are assigned
 func (e *Assign) assign(currentReviewers map[string]bool) error {
-	required, err := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
-	if err != nil {
-		return trace.Wrap(err)
-	}
+	required := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
+
 	for _, requiredReviewer := range required {
 		if !currentReviewers[requiredReviewer] {
 			return trace.BadParameter("failed to assign all reviewers.")

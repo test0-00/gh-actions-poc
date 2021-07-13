@@ -2,11 +2,10 @@
 github.com/davecgh/go-spew/spew
 # github.com/golang/protobuf v1.4.2
 github.com/golang/protobuf/proto
-# github.com/google/go-github v17.0.0+incompatible
+# github.com/google/go-github/v37 v37.0.0
 ## explicit
-github.com/google/go-github/github
-# github.com/google/go-querystring v1.1.0
-## explicit
+github.com/google/go-github/v37/github
+# github.com/google/go-querystring v1.0.0
 github.com/google/go-querystring/query
 # github.com/gravitational/trace v1.1.15
 ## explicit
@@ -25,6 +24,13 @@ github.com/sirupsen/logrus
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+golang.org/x/crypto/cast5
+golang.org/x/crypto/openpgp
+golang.org/x/crypto/openpgp/armor
+golang.org/x/crypto/openpgp/elgamal
+golang.org/x/crypto/openpgp/errors
+golang.org/x/crypto/openpgp/packet
+golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20200822124328-c89045814202
 golang.org/x/net/context

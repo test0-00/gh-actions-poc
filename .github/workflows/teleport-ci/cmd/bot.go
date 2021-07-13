@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v37/github"
 	ci "github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/assign"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/check"
@@ -14,32 +15,39 @@ import (
 )
 
 func main() {
+
+	// flags
+	token := flag.String("token", "", "token is the Github authentication token")
+	assignments := flag.String("assignments", "", "assigners is a string representing a json object that maps authors to reviewers")
+
+    flag.Parse()
+
+	if *token == "" {
+		log.Fatal("missing authentication token.")
+	}
+	if *assignments == "" {
+		log.Fatal("missing assignments string.")
+	}
+
 	args := os.Args[1:]
 	if len(args) != 1 {
 		panic("One argument needed \nassign-reviewers or check-reviewers")
 	}
 
-	accessToken := os.Getenv(ci.TOKEN)
-	if accessToken == "" {
-		log.Fatal("Token is not set as an environment variable.")
-	}
-
 	// Creating and authenticating the Github client
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: accessToken},
+		&oauth2.Token{AccessToken: *token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 
 	// Getting event object path and token
 	path := os.Getenv(ci.GITHUBEVENTPATH)
-	token := os.Getenv(ci.TOKEN)
-	reviewers := os.Getenv(ci.ASSIGNMENTS)
 
 	env, err := environment.New(environment.Config{Client: client,
-		Token:     token,
-		Reviewers: reviewers})
+		Token:     *token,
+		Reviewers: *assignments})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -79,3 +87,5 @@ func main() {
 	}
 
 }
+
+

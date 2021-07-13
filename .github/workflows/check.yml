@@ -1,5 +1,9 @@
-# Workflow will trigger on all pull request review event types. 
-on: pull_request_review
+# Workflow will trigger on all pull request review event types and on the push event type.
+# 
+# NOTE: Due to the sensitive nature of this workflow, it must always be run
+# against master AND with minimal permissions. These properties must always
+# be maintained!
+on: [pull_request_review, push]
 
 jobs: 
   check-reviews:
@@ -16,7 +20,5 @@ jobs:
         uses: actions/setup-go@v2
         # Run "check-reviewers" subcommand on bot.
       - name: Assigning reviewers 
-        run: cd teleport-ci && make check
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVIEWERS: ${{ secrets.ASSIGNMENTS }}
+        run: cd teleport-ci && make check --token ${{ secrets.GITHUB_TOKEN }} --assignments ${{ secrets.ASSIGNMENTS }}
+
