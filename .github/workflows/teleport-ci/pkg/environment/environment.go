@@ -58,14 +58,14 @@ func New(c Config) (*Environment, error) {
 func (e *Environment) GetReviewersForUser(user string) ([]string, error) {
 	value, ok := e.Secrets.reviewers[user]
 	if !ok {
-		return nil, trace.BadParameter("author not found")
+		return nil, trace.BadParameter("author not found.")
 	}
 	return value, nil
 }
 
 func unmarshalReviewers(str string) (map[string][]string, error) {
 	if str == "" {
-		return nil, trace.BadParameter("reviewers not found")
+		return nil, trace.BadParameter("reviewers not found.")
 	}
 	m := make(map[string][]string)
 

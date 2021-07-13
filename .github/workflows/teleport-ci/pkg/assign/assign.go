@@ -109,7 +109,7 @@ func newPullRequestContext(body []byte) (*PullRequestContext, error) {
 		return nil, trace.Wrap(err)
 	}
 	if pr.Number == 0 || pr.PullRequest.User.Login == "" || pr.Repository.Name == "" || pr.Repository.Owner.Name == "" {
-		return nil, trace.BadParameter("insufficient data obatined.")
+		return nil, trace.BadParameter("insufficient data obtained.")
 	}
 	return &PullRequestContext{
 		number:    pr.Number,

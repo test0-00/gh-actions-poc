@@ -129,7 +129,7 @@ func newReviewContext(body []byte) (*ReviewContext, error) {
 		return nil, trace.Wrap(err)
 	}
 	if rev.PullRequest.Number == 0 || rev.Review.User.Login == "" || rev.Repository.Name == "" || rev.Repository.Owner.Name == "" {
-		return nil, trace.BadParameter("insufficient data obatined.")
+		return nil, trace.BadParameter("insufficient data obtained.")
 	}
 	return &ReviewContext{
 		userLogin: rev.Review.User.Login,
