@@ -56,7 +56,7 @@ func (c *Config) CheckAndSetDefaults() error {
 }
 
 // Check checks if all the reviewers have approved a pull request
-// returns nil if all required reviewers have approved, returns error if not
+// returns nil if all required reviewers have approved or returns an error if not
 func (c *Check) Check() error {
 	env := c.Environment
 	listOpts := github.ListOptions{}
@@ -68,9 +68,10 @@ func (c *Check) Check() error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	var currentReviews map[string]review
+
+	currentReviews := make(map[string]review)
 	for _, rev := range reviews {
-		currentReviews[*rev.User.Name] = review{name: *rev.User.Name, status: *rev.State}
+		currentReviews[*rev.User.Login] = review{name: *rev.User.Login, status: *rev.State}
 	}
 	err = c.check(currentReviews)
 	if err != nil {
@@ -88,7 +89,6 @@ type review struct {
 // check checks to see if all the required reviewers have approved
 func (c *Check) check(currentReviews map[string]review) error {
 	if len(currentReviews) == 0 {
-
 		return trace.BadParameter("pull request has no reviews.")
 	}
 	required, err := c.Environment.GetReviewersForUser(c.reviewContext.userLogin)

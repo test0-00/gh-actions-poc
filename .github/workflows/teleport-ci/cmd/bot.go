@@ -10,23 +10,28 @@ import (
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/assign"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/check"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/environment"
-
 	"golang.org/x/oauth2"
 )
 
 func main() {
 	args := os.Args[1:]
 	if len(args) != 1 {
-		panic("one argument needed \nassign-reviewers or check-reviewers")
+		panic("One argument needed \nassign-reviewers or check-reviewers")
 	}
+
+	accessToken := os.Getenv(ci.TOKEN)
+	if accessToken == "" {
+		log.Fatal("Token is not set as an environment variable.")
+	}
+
 	// Creating and authenticating the Github client
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv(ci.TOKEN)},
+		&oauth2.Token{AccessToken: accessToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
-	
+
 	// Getting event object path and token
 	path := os.Getenv(ci.GITHUBEVENTPATH)
 	token := os.Getenv(ci.TOKEN)
@@ -54,8 +59,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		
-	case "check-reviewers":
+
+	case ci.CHECK:
 		log.Println("Checking reviewers...")
 		cfg := check.Config{
 			Environment: env,
@@ -69,7 +74,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
+	default:
+		log.Fatalf("Unknown subcommand: %v", args[0])
 	}
 
 }

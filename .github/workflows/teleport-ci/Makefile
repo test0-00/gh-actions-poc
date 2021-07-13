@@ -7,9 +7,9 @@ assign:
 check: 
 	go run cmd/bot.go check-reviewers
 
-# Runs all go tests
+# Runs all Go tests and shows the coverage
 test: 
-	go test ./...
+	go test ./... -cover
 
 lint: 
 	golangci-lint run

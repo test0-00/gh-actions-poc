@@ -8,7 +8,6 @@ import (
 )
 
 func TestNewEnvironment(t *testing.T) {
-
 	tests := []struct {
 		cfg      Config
 		checkErr require.ErrorAssertionFunc
@@ -33,8 +32,8 @@ func TestNewEnvironment(t *testing.T) {
 			checkErr: require.NoError,
 			desc:     "valid Environment config",
 			expected: &Environment{
-				Secrets:          Secrets{token: "123456", reviewers: map[string][]string{"foo": {"bar", "baz"}}},
-				ReviewersRequest: github.ReviewersRequest{}, Client: github.NewClient(nil),
+				Secrets: Secrets{token: "123456", reviewers: map[string][]string{"foo": {"bar", "baz"}}},
+				Client:  github.NewClient(nil),
 			},
 		},
 		{

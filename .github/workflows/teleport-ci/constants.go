@@ -11,7 +11,6 @@ const (
 	GITHUBEVENTPATH = "GITHUB_EVENT_PATH"
 )
 
-
 const (
 	APPROVED = "APPROVED"
 	// ASSIGNMENTS is the environment variable name that stores

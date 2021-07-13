@@ -42,37 +42,33 @@ func New(c Config) (*Assign, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-
 	pullContext, err := NewPullRequestContext(c.EventPath)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 	a.pullContext = pullContext
 	a.Environment = c.Environment
-
 	return &a, nil
 }
 
 // Assign assigns reviewers to the pull request
 func (e *Assign) Assign() error {
-
 	// Getting and setting reviewers for author of pull request
 	r, err := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	e.Environment.ReviewersRequest = github.ReviewersRequest{Reviewers: r}
-	cl := e.Environment.Client
+	client := e.Environment.Client
 	// Assigning reviewers to pull request
-	pr, _, err := cl.PullRequests.RequestReviewers(context.TODO(),
+	pr, _, err := client.PullRequests.RequestReviewers(context.TODO(),
 		e.pullContext.repoOwner,
 		e.pullContext.repoName, e.pullContext.number,
-		e.Environment.ReviewersRequest)
+		github.ReviewersRequest{Reviewers: r})
 	if err != nil {
 		return trace.Wrap(err)
 	}
 
-	var reqs map[string]bool
+	reqs := make(map[string]bool)
 	for _, reviewer := range pr.RequestedReviewers {
 		reqs[*reviewer.Login] = true
 	}

@@ -16,9 +16,8 @@ type Config struct {
 
 // Environment contains information about the environment
 type Environment struct {
-	Secrets          Secrets
-	Client           *github.Client
-	ReviewersRequest github.ReviewersRequest
+	Secrets Secrets
+	Client  *github.Client
 }
 
 // CheckAndSetDefaults verifies configuration and sets defaults
@@ -74,14 +73,22 @@ func unmarshalReviewers(str string) (map[string][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return m, nil
 }
 
-// Secrets contains environment secrets
-type Secrets struct {
-	reviewers map[string][]string
-	token     string
+/*
+   Below are struct definitions used to transform pull request and review
+   events (represented as a json object) into Golang structs. The way these objects are
+   structured are different, therefore separate structs for each event are needed
+   to unmarshal appropiately even though the end result essentially contains
+   the same information.
+*/
+
+// PRMetadata contains metadata about the pull request (used for the pull request event)
+type PRMetadata struct {
+	Number      int        `json:"number"`
+	PullRequest PR         `json:"pull_request"`
+	Repository  Repository `json:"repository"`
 }
 
 // ReviewMetadata contains metadata about the pull request
@@ -90,6 +97,12 @@ type ReviewMetadata struct {
 	Review      Review      `json:"review"`
 	Repository  Repository  `json:"repository"`
 	PullRequest PullRequest `json:"pull_request"`
+}
+
+// Secrets contains environment secrets
+type Secrets struct {
+	reviewers map[string][]string
+	token     string
 }
 
 // Review contains information about the pull request review
@@ -102,16 +115,9 @@ type User struct {
 	Login string `json:"login"`
 }
 
-// PullRequest conatins information about the pull request (used for pull request *review* event)
+// PullRequest contains information about the pull request (used for pull request review event)
 type PullRequest struct {
 	Number int `json:"number"`
-}
-
-// PRMetadata contains metadata about the pull request (used for the pull request event)
-type PRMetadata struct {
-	Number      int        `json:"number"`
-	PullRequest PR         `json:"pull_request"`
-	Repository  Repository `json:"repository"`
 }
 
 // PR contains information about the pull request (used for the pull request event)

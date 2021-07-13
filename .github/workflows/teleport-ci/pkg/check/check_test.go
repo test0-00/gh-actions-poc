@@ -71,7 +71,6 @@ func TestNewCheck(t *testing.T) {
 	assign, err = New(config)
 	require.Error(t, err)
 	require.Nil(t, assign)
-
 }
 
 // TestNewReviewContextValid tests the unmarshalling of a valid review event
