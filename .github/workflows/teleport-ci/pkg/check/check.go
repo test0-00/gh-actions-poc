@@ -140,12 +140,12 @@ func invalidateApprovals(repoOwner, repoName string, number int, reviews map[str
 func hasNewCommit(revs map[string]review) bool {
 	var reviews []review
 	if len(revs) == 1 {
+		// TODO: if a PR has 1 commit, check if it is the most recent 
 		return false
 	}
 	for _, v := range revs {
 		reviews = append(reviews, v)
 	}
-
 	i := 0
 	for i < len(reviews)-1 {
 		if reviews[i].commitID != reviews[i+1].commitID {

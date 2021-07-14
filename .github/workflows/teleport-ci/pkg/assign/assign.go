@@ -42,24 +42,23 @@ func New(c Config) (*Assign, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	pullContext, err := NewPullRequestContext(c.EventPath)
+	err = a.SetPullRequestContext(c.EventPath)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	a.pullContext = pullContext
 	a.Environment = c.Environment
 	return &a, nil
 }
 
 // Assign assigns reviewers to the pull request
-func (e *Assign) Assign() error {
+func (a *Assign) Assign() error {
 	// Getting and setting reviewers for author of pull request
-	r := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
-	client := e.Environment.Client
+	r := a.Environment.GetReviewersForUser(a.pullContext.userLogin)
+	client := a.Environment.Client
 	// Assigning reviewers to pull request
 	pr, _, err := client.PullRequests.RequestReviewers(context.TODO(),
-		e.pullContext.repoOwner,
-		e.pullContext.repoName, e.pullContext.number,
+		a.pullContext.repoOwner,
+		a.pullContext.repoName, a.pullContext.number,
 		github.ReviewersRequest{Reviewers: r})
 	if err != nil {
 		return trace.Wrap(err)
@@ -69,12 +68,12 @@ func (e *Assign) Assign() error {
 	for _, reviewer := range pr.RequestedReviewers {
 		reqs[*reviewer.Login] = true
 	}
-	return e.assign(reqs)
+	return a.assign(reqs)
 }
 
 // assign verifies reviewers are assigned
-func (e *Assign) assign(currentReviewers map[string]bool) error {
-	required := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
+func (a *Assign) assign(currentReviewers map[string]bool) error {
+	required := a.Environment.GetReviewersForUser(a.pullContext.userLogin)
 
 	for _, requiredReviewer := range required {
 		if !currentReviewers[requiredReviewer] {
@@ -84,34 +83,35 @@ func (e *Assign) assign(currentReviewers map[string]bool) error {
 	return nil
 }
 
-// NewPullRequestContext creates a new instance of PullRequestContext
-func NewPullRequestContext(path string) (*PullRequestContext, error) {
+// SetPullRequestContext creates a new instance of PullRequestContext
+func (a *Assign) SetPullRequestContext(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, trace.Wrap(err)
+		return trace.Wrap(err)
 	}
 	body, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil, trace.Wrap(err)
+		return trace.Wrap(err)
 	}
-	return newPullRequestContext(body)
+	return a.setPullRequestContext(body)
 }
 
-func newPullRequestContext(body []byte) (*PullRequestContext, error) {
+func (a *Assign) setPullRequestContext(body []byte) error {
 	var pr environment.PRMetadata
 	err := json.Unmarshal(body, &pr)
 	if err != nil {
-		return nil, trace.Wrap(err)
+		return trace.Wrap(err)
 	}
 	if pr.Number == 0 || pr.PullRequest.User.Login == "" || pr.Repository.Name == "" || pr.Repository.Owner.Name == "" {
-		return nil, trace.BadParameter("insufficient data obtained.")
+		return trace.BadParameter("insufficient data obtained.")
 	}
-	return &PullRequestContext{
+	a.pullContext = &PullRequestContext{
 		number:    pr.Number,
 		userLogin: pr.PullRequest.User.Login,
 		repoName:  pr.Repository.Name,
 		repoOwner: pr.Repository.Owner.Name,
-	}, nil
+	}
+	return nil
 }
 
 // PullRequestContext contains information about the pull request event

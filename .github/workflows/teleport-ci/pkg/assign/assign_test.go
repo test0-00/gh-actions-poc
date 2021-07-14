@@ -79,24 +79,27 @@ func TestNewAssign(t *testing.T) {
 
 // TestNewPullRequestContextValid tests the unmarshalling of a valid pull request event
 func TestPullRequestContextValid(t *testing.T) {
-	ctx, err := newPullRequestContext([]byte(validString))
+	a := Assign{}
+	err := a.setPullRequestContext([]byte(validString))
 	require.NoError(t, err)
-	require.Equal(t, 2, ctx.number)
-	require.Equal(t, "Codertocat", ctx.userLogin)
-	require.Equal(t, "Hello-World", ctx.repoName)
-	require.Equal(t, "Codertocat", ctx.repoOwner)
+	require.Equal(t, 2, a.pullContext.number)
+	require.Equal(t, "Codertocat", a.pullContext.userLogin)
+	require.Equal(t, "Hello-World", a.pullContext.repoName)
+	require.Equal(t, "Codertocat", a.pullContext.repoOwner)
 
 }
 
 // TestPullRequestContextInvalid tests the unmarshalling of an event that is not a pull request (i.e. review event)
 func TestPullRequestContextInvalid(t *testing.T) {
-	prCtx, err := newPullRequestContext([]byte(invalidString))
-	require.Error(t, err)
-	require.Nil(t, prCtx)
+	a := Assign{}
 
-	prCtx, err = newPullRequestContext([]byte(""))
+	err := a.setPullRequestContext([]byte(invalidString))
 	require.Error(t, err)
-	require.Nil(t, prCtx)
+	require.Nil(t, a.pullContext)
+
+	err = a.setPullRequestContext([]byte(""))
+	require.Error(t, err)
+	require.Nil(t, a.pullContext)
 }
 
 func TestAssign(t *testing.T) {
