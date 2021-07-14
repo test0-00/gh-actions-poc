@@ -90,7 +90,8 @@ type review struct {
 	id       int64
 }
 
-// check checks to see if all the required reviewers have approved
+// check checks to see if all the required reviewers have approved and invalidates 
+// approvals for external contributors if a new commit is pushed
 func (c *Check) check(currentReviews map[string]review) error {
 	if len(currentReviews) == 0 {
 		return trace.BadParameter("pull request has no reviews.")
