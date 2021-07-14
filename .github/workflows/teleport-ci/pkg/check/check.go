@@ -46,7 +46,7 @@ func New(c Config) (*Check, error) {
 		return nil, trace.Wrap(err)
 	}
 	ch.Environment = c.Environment
-	ch.teamMembersFn = GetTeamMembers
+	ch.teamMembersFn = getTeamMembers
 	ch.invalidate = invalidateApprovals
 	return &ch, nil
 }
@@ -71,7 +71,6 @@ func (c *Check) Check() error {
 		c.reviewContext.repoName,
 		c.reviewContext.number,
 		&listOpts)
-
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -118,7 +117,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 			if err != nil {
 				return trace.Wrap(err)
 			}
-			log.Printf("invalidating approvals for external contributor.")
+			log.Print("invalidating approvals for external contributor.")
 			return trace.BadParameter("all required reviewers have not yet approved.")
 		}
 	}
@@ -261,8 +260,8 @@ func contains(slice []string, value string) bool {
 	return false
 }
 
-// GetTeamMembers gets team members
-func GetTeamMembers(organization, teamSlug string, client *github.Client) ([]string, error) {
+// getTeamMembers gets team members
+func getTeamMembers(organization, teamSlug string, client *github.Client) ([]string, error) {
 	var teamMembers []string
 	members, _, err := client.Teams.ListTeamMembersBySlug(context.TODO(), organization, teamSlug, &github.TeamListTeamMembersOptions{})
 	if err != nil {

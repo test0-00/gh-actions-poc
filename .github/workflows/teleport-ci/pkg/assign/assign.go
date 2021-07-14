@@ -55,7 +55,6 @@ func New(c Config) (*Assign, error) {
 func (e *Assign) Assign() error {
 	// Getting and setting reviewers for author of pull request
 	r := e.Environment.GetReviewersForUser(e.pullContext.userLogin)
-
 	client := e.Environment.Client
 	// Assigning reviewers to pull request
 	pr, _, err := client.PullRequests.RequestReviewers(context.TODO(),
