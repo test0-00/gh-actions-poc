@@ -12,24 +12,41 @@ type Config struct {
 	Client    *github.Client
 	Token     string
 	Reviewers string
+	TeamSlug  string
+	Org       string
+	// DefaultReviewers is used for external contributors
+	DefaultReviewers []string
 }
 
 // Environment contains information about the environment
 type Environment struct {
-	Secrets Secrets
-	Client  *github.Client
+	Client    *github.Client
+	reviewers map[string][]string
+	defaultReviewers []string
+	token     string
+	TeamSlug string
+	Org      string
 }
 
 // CheckAndSetDefaults verifies configuration and sets defaults
 func (c *Config) CheckAndSetDefaults() error {
 	if c.Client == nil {
-		return trace.BadParameter("missing parameter Client")
+		return trace.BadParameter("missing parameter Client.")
 	}
 	if c.Token == "" {
-		return trace.BadParameter("missing parameter EventPath or is empty string")
+		return trace.BadParameter("missing parameter Token.")
 	}
 	if c.Reviewers == "" {
-		return trace.BadParameter("missing parameter Reviewers")
+		return trace.BadParameter("missing parameter Reviewers.")
+	}
+	if c.TeamSlug == "" {
+		return trace.BadParameter("missing parameter TeamSlug.")
+	}
+	if c.Org == "" {
+		return trace.BadParameter("missing parameter Org.")
+	}
+	if c.DefaultReviewers == nil {
+		return trace.BadParameter("missing parameter DefaultReviewers.")
 	}
 	return nil
 }
@@ -42,26 +59,17 @@ func New(c Config) (*Environment, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-
-	reviewers, err := unmarshalReviewers(c.Reviewers)
+	env.Client = c.Client
+	revs, err := unmarshalReviewers(c.Reviewers)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	env.Secrets.reviewers = reviewers
-	env.Secrets.token = c.Token
-	env.Client = c.Client
-
+	env.reviewers = revs
+	env.token = c.Token
+	env.TeamSlug = c.TeamSlug
+	env.Org = c.Org
+	env.defaultReviewers = c.DefaultReviewers
 	return &env, nil
-}
-
-// GetReviewersForUser gets the required reviewers for the current user
-func (e *Environment) GetReviewersForUser(user string) []string {
-	value, ok := e.Secrets.reviewers[user]
-	if !ok {
-		// Author is external, return default reviewers
-		return []string{"russjones", "r0mant"}
-	}
-	return value
 }
 
 func unmarshalReviewers(str string) (map[string][]string, error) {
@@ -75,6 +83,16 @@ func unmarshalReviewers(str string) (map[string][]string, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+// GetReviewersForUser gets the required reviewers for the current user
+func (e *Environment) GetReviewersForUser(user string) []string {
+	value, ok := e.reviewers[user]
+	// author is external or does not have set reviewers
+	if !ok {
+		return e.defaultReviewers
+	}
+	return value
 }
 
 /*
@@ -100,21 +118,17 @@ type ReviewMetadata struct {
 	PullRequest PullRequest `json:"pull_request"`
 }
 
+// PushMetadata contains metadata about the push event
 type PushMetadata struct {
-	Pusher Pusher `json:"pusher"`
+	Pusher     Pusher     `json:"pusher"`
 	Repository Repository `json:"repository"`
 	// After is the SHA of the most recent commit on ref after the push.
 	After string `json:"after"`
 }
 
+// Pusher represents the author of the push event
 type Pusher struct {
 	Name string `json:"name"`
-}
-
-// Secrets contains environment secrets
-type Secrets struct {
-	reviewers map[string][]string
-	token     string
 }
 
 // Review contains information about the pull request review

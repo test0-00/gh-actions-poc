@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"os"
 
 	ci "github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci"
@@ -25,7 +26,13 @@ type Config struct {
 type Check struct {
 	Environment   *environment.Environment
 	reviewContext *ReviewContext
+	teamMembersFn teamMembersFn
+	invalidate    invalidate
 }
+
+type getPRNumber func(string, string, string, *github.Client) (int, error)
+type teamMembersFn func(string, string, *github.Client) ([]string, error)
+type invalidate func(string, string, int, map[string]review, *github.Client) error
 
 // New returns a new instance of  Check
 func New(c Config) (*Check, error) {
@@ -39,6 +46,8 @@ func New(c Config) (*Check, error) {
 		return nil, trace.Wrap(err)
 	}
 	ch.Environment = c.Environment
+	ch.teamMembersFn = GetTeamMembers
+	ch.invalidate = invalidateApprovals
 	return &ch, nil
 }
 
@@ -98,27 +107,27 @@ func (c *Check) check(currentReviews map[string]review) error {
 		}
 	}
 	// If all required reviewers have approved, check if author is external
-	if !isInternal(c.reviewContext.userLogin) {
+	ok, err := c.isInternal(c.reviewContext.userLogin)
+	if err != nil {
+		return trace.Wrap(err)
+	}
+	if !ok {
 		// If all required reviewers reviewed, check if commit shas are all the same
 		if hasNewCommit(currentReviews) {
-			err := c.invalidateApprovals(currentReviews)
+			err := c.invalidate(c.reviewContext.repoOwner, c.reviewContext.repoName, c.reviewContext.number, currentReviews, c.Environment.Client)
 			if err != nil {
 				return trace.Wrap(err)
 			}
-			return trace.BadParameter("invalidating approvals for external contributor, new commit pushed.")
+			log.Printf("invalidating approvals for external contributor.")
+			return trace.BadParameter("all required reviewers have not yet approved.")
 		}
 	}
 	return nil
 }
 
-func (c *Check) invalidateApprovals(reviews map[string]review) error {
-	client := c.Environment.Client
+func invalidateApprovals(repoOwner, repoName string, number int, reviews map[string]review, clt *github.Client) error {
 	for _, v := range reviews {
-		_, _, err := client.PullRequests.DismissReview(context.TODO(), c.reviewContext.repoOwner,
-			c.reviewContext.repoName,
-			c.reviewContext.number,
-			v.id,
-			&github.PullRequestReviewDismissalRequest{})
+		_, _, err := clt.PullRequests.DismissReview(context.TODO(), repoOwner, repoName, number, v.id, &github.PullRequestReviewDismissalRequest{})
 		if err != nil {
 			return trace.Wrap(err)
 		}
@@ -126,14 +135,13 @@ func (c *Check) invalidateApprovals(reviews map[string]review) error {
 	return nil
 }
 
-// isInternal checks if author is internal
-func isInternal(author string) bool {
-	return false
-}
-
-// hasNewCommit checks to see if all the hashes are the same
+// hasNewCommit sees if the pull request has a new commit
+// by comparing commits after the push event
 func hasNewCommit(revs map[string]review) bool {
 	var reviews []review
+	if len(revs) == 1 {
+		return false
+	}
 	for _, v := range revs {
 		reviews = append(reviews, v)
 	}
@@ -143,6 +151,7 @@ func hasNewCommit(revs map[string]review) bool {
 		if reviews[i].commitID != reviews[i+1].commitID {
 			return true
 		}
+		i++
 	}
 	return false
 }
@@ -157,11 +166,19 @@ func (c *Check) SetReviewContext(path string) error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	return c.setReviewContext(body)
+	return c.setReviewContext(body, getPullRequestNumber)
 }
 
-// newReview extracts data from body and returns a new instance of pull request review
-func (c *Check) setReviewContext(body []byte) error {
+// ReviewContext is the pull request review metadata
+type ReviewContext struct {
+	userLogin string
+	repoName  string
+	repoOwner string
+	number    int
+}
+
+// setReviewContext extracts data from body and returns a new instance of pull request review
+func (c *Check) setReviewContext(body []byte, fn getPRNumber) error {
 	// Used on review events
 	var rev environment.ReviewMetadata
 	err := json.Unmarshal(body, &rev)
@@ -186,7 +203,8 @@ func (c *Check) setReviewContext(body []byte) error {
 	}
 	if push.Pusher.Name != "" && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.After != "" {
 		// Get pull request number
-		prNumber, err := c.getPullRequestNumber(push.Repository.Owner.Name, push.Repository.Name, push.After)
+		clt := c.Environment.Client
+		prNumber, err := fn(push.Repository.Owner.Name, push.Repository.Name, push.After, clt)
 		if err != nil {
 			return trace.Wrap(err)
 		}
@@ -200,23 +218,58 @@ func (c *Check) setReviewContext(body []byte) error {
 	return trace.BadParameter("insufficient data obtained.")
 }
 
-// https://docs.github.com/en/rest/reference/repos#list-pull-requests-associated-with-a-commit
-func (c *Check) getPullRequestNumber(owner, repo, commitSha string) (int, error) {
-	client := c.Environment.Client
-	pulls, _, err := client.PullRequests.ListPullRequestsWithCommit(context.TODO(), owner, repo, commitSha, nil)
+// getPullRequestNumber gets the pull request number associated with a commit sha
+// this is used for `push` events because the event payload does not include the pull request number
+// as `push` events can occur without a pull request.
+func getPullRequestNumber(owner, repo, commitSha string, clt *github.Client) (int, error) {
+	pulls, _, err := clt.PullRequests.ListPullRequestsWithCommit(context.TODO(), owner, repo, commitSha, nil)
 	if err != nil {
 		return -1, err
 	}
-	if len(pulls) != 1 {
+	switch len(pulls) {
+	case 0:
 		return -1, trace.NotFound("pull request not found.")
+
+	case 1:
+		return -1, trace.BadParameter("ambiguous pull request, cannot determine number.")
 	}
 	return *pulls[0].Number, nil
 }
 
-// ReviewContext is the pull request review metadata
-type ReviewContext struct {
-	userLogin string
-	repoName  string
-	repoOwner string
-	number    int
+// isInternal determines if an author is an internal contributor
+func (c *Check) isInternal(author string) (bool, error) {
+	members, err := c.teamMembersFn(c.Environment.Org, c.Environment.TeamSlug, c.Environment.Client)
+	if err != nil {
+		return false, trace.Wrap(err)
+	}
+	if !contains(members, author) {
+		return false, nil
+	}
+	revs := c.Environment.GetReviewersForUser(author)
+	if revs == nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+func contains(slice []string, value string) bool {
+	for i := range slice {
+		if slice[i] == value {
+			return true
+		}
+	}
+	return false
+}
+
+// GetTeamMembers gets team members
+func GetTeamMembers(organization, teamSlug string, client *github.Client) ([]string, error) {
+	var teamMembers []string
+	members, _, err := client.Teams.ListTeamMembersBySlug(context.TODO(), organization, teamSlug, &github.TeamListTeamMembersOptions{})
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	for _, member := range members {
+		teamMembers = append(teamMembers, *member.Login)
+	}
+	return teamMembers, nil
 }

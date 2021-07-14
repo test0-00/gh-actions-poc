@@ -13,9 +13,12 @@ import (
 
 func TestNewAssign(t *testing.T) {
 	env, err := environment.New(environment.Config{
-		Client:    github.NewClient(nil),
-		Token:     "12345",
-		Reviewers: `{"foo": ["bar", "baz"]}`,
+		Client:           github.NewClient(nil),
+		Token:            "12345",
+		Reviewers:        `{"foo": ["bar", "baz"]}`,
+		TeamSlug:         "team-name",
+		Org:              "org",
+		DefaultReviewers: []string{"admin"},
 	})
 	require.NoError(t, err)
 
@@ -98,9 +101,12 @@ func TestPullRequestContextInvalid(t *testing.T) {
 
 func TestAssign(t *testing.T) {
 	env, err := environment.New(environment.Config{
-		Client:    github.NewClient(nil),
-		Token:     "12345",
-		Reviewers: `{"foo": ["bar", "baz"], "baz": ["foo", "car"], "bar": ["admin", "foo"]}`,
+		Client:           github.NewClient(nil),
+		Token:            "12345",
+		Reviewers:        `{"foo": ["bar", "baz"], "baz": ["foo", "car"], "bar": ["admin", "foo"]}`,
+		TeamSlug:         "team-name",
+		Org:              "org",
+		DefaultReviewers: []string{"admin"},
 	})
 	require.NoError(t, err)
 

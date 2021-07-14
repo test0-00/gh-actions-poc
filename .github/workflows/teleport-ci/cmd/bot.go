@@ -15,10 +15,8 @@ import (
 )
 
 func main() {
-
-	// flags
-	token := flag.String("token", "", "token is the Github authentication token")
-	assignments := flag.String("assignments", "", "assigners is a string representing a json object that maps authors to reviewers")
+	token := flag.String("token", "", "token is the Github authentication token.")
+	assignments := flag.String("assignments", "", "assigners is a string representing a json object that maps authors to reviewers.")
 
     flag.Parse()
 

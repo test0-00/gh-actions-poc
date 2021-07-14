@@ -16,6 +16,9 @@ func TestNewCheck(t *testing.T) {
 		Client:    github.NewClient(nil),
 		Token:     "12345",
 		Reviewers: `{"foo": ["bar", "baz"]}`,
+		TeamSlug:  "team-name",
+		Org:       "org",
+		DefaultReviewers: []string{},
 	})
 	require.NoError(t, err)
 	// Config with invalid path
@@ -76,7 +79,8 @@ func TestNewCheck(t *testing.T) {
 // TestNewReviewContextValid tests the unmarshalling of a valid review event
 func TestSetReviewContextValid(t *testing.T) {
 	ch := Check{}
-	err := ch.setReviewContext([]byte(validString))
+
+	err := ch.setReviewContext([]byte(validString), getPRNumberTest)
 	require.NoError(t, err)
 	require.Equal(t, 2, ch.reviewContext.number)
 	require.Equal(t, "Codertocat", ch.reviewContext.userLogin)
@@ -87,94 +91,189 @@ func TestSetReviewContextValid(t *testing.T) {
 // TestNewReviewContextInvalid tests the unmarshalling of an event that is not a review (i.e. pull request event)
 func TestSetReviewContextInvalid(t *testing.T) {
 	ch := Check{}
-
-	err := ch.setReviewContext([]byte(invalidString))
+	err := ch.setReviewContext([]byte(invalidString), getPRNumberTest)
 	require.Error(t, err)
 
-	err = ch.setReviewContext([]byte(""))
+	err = ch.setReviewContext([]byte(""), getPRNumberTest)
 	require.Error(t, err)
 
-	err = ch.setReviewContext([]byte(invalidStringNoLogin))
+	err = ch.setReviewContext([]byte(invalidStringNoLogin), getPRNumberTest)
 	require.Error(t, err)
 }
 
-func TestCheck(t *testing.T) {
+func getPRNumberTest(org, teamSlug, after string, clt *github.Client) (int, error) {
+	return -1, nil
+}
+
+func TestCheckInternal(t *testing.T) {
 	env, err := environment.New(environment.Config{
-		Client:    github.NewClient(nil),
-		Token:     "12345",
-		Reviewers: `{"foo": ["bar", "baz"], "baz": ["foo", "car"], "bar": ["admin", "foo"]}`,
+		Client:           github.NewClient(nil),
+		Token:            "12345",
+		Reviewers:        `{"foo": ["bar", "baz"], "baz": ["foo", "car"], "bar": ["admin", "foo"]}`,
+		DefaultReviewers: []string{"admin"},
+		TeamSlug:         "team-name",
+		Org:       "org",
 	})
 	require.NoError(t, err)
 
 	tests := []struct {
 		obj      map[string]review
-		env      Check
+		c        Check
 		checkErr require.ErrorAssertionFunc
 		desc     string
 	}{
-
 		{
 			obj:      map[string]review{},
-			env:      Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env},
+			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env, teamMembersFn: teamMembersTest, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with no reviews",
 		},
-
 		{
 			obj: map[string]review{
-				"bar": {name: "bar", status: "APPROVED"},
+				"bar": {name: "bar", status: "APPROVED", commitID: "1"},
 			},
-			env:      Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env},
+			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env, teamMembersFn: teamMembersTest, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with one one review and approval, but not all required approvals",
 		},
-
 		{
 			obj: map[string]review{
-				"bar": {name: "bar", status: "APPROVED"},
-				"baz": {name: "baz", status: "APPROVED"},
+				"bar": {name: "bar", status: "APPROVED", commitID: "1"},
+				"baz": {name: "baz", status: "APPROVED", commitID: "1"},
 			},
-			env:      Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env},
+			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env, teamMembersFn: teamMembersTest, invalidate: invalidateTest},
 			checkErr: require.NoError,
 			desc:     "pull request with all required approvals",
 		},
 		{
 			obj: map[string]review{
-				"foo": {name: "foo", status: "APPROVED"},
-				"car": {name: "car", status: "COMMENTED"},
+				"foo": {name: "foo", status: "APPROVED", commitID: "1"},
+				"car": {name: "car", status: "COMMENTED", commitID: "1"},
 			},
-			env:      Check{reviewContext: &ReviewContext{userLogin: "baz"}, Environment: env},
+			c:        Check{reviewContext: &ReviewContext{userLogin: "baz"}, Environment: env, teamMembersFn: teamMembersTest, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with one approval and one comment review",
+		},
+		{
+			obj: map[string]review{
+				"admin": {name: "admin", status: "COMMENTED", commitID: "1"},
+				"foo":   {name: "foo", status: "COMMENTED", commitID: "1"},
+			},
+			c:        Check{reviewContext: &ReviewContext{userLogin: "bar"}, Environment: env, teamMembersFn: teamMembersTest, invalidate: invalidateTest},
+			checkErr: require.Error,
+			desc:     "pull request does not have all required approvals",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			err := test.c.check(test.obj)
+			test.checkErr(t, err)
+		})
+	}
+
+}
+func TestCheckExternal(t *testing.T) {
+	tests := []struct {
+		obj       map[string]review
+		c         Check
+		checkErr  require.ErrorAssertionFunc
+		desc      string
+		envConfig environment.Config
+	}{
+		{
+			obj: map[string]review{
+				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
+				"admin2": {name: "admin2", status: "APPROVED", commitID: "2"},
+			},
+			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
+			checkErr: require.Error,
+			desc:     "pull request with all required approvals, commit hashes do not match",
+			envConfig: environment.Config{
+				TeamSlug:         "team-name",
+				Org:              "org",
+				DefaultReviewers: []string{"admin", "admin2"},
+				Client:           github.NewClient(nil),
+				Token:            "12345",
+				Reviewers:        `{"ignored": ["bar", "baz"]}`,
+			},
 		},
 
 		{
 			obj: map[string]review{
-				"foo": {name: "foo", status: "APPROVED"},
-				"car": {name: "car", status: "COMMENTED"},
+				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
+				"admin2": {name: "admin2", status: "APPROVED", commitID: "1"},
 			},
-			env:      Check{reviewContext: &ReviewContext{userLogin: "random"}, Environment: env},
-			checkErr: require.Error,
-			desc:     "pull request with unknown author",
+			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
+			checkErr: require.NoError,
+			desc:     "pull request with all required approvals, commit hashes hashes match",
+			envConfig: environment.Config{
+				TeamSlug:         "team-name",
+				Org:              "org",
+				DefaultReviewers: []string{"admin", "admin2"},
+				Client:           github.NewClient(nil),
+				Token:            "12345",
+				Reviewers:        `{"ignored": ["bar", "baz"]}`,
+			},
 		},
 		{
 			obj: map[string]review{
-				"admin": {name: "admin", status: "COMMENTED"},
-				"foo":   {name: "foo", status: "COMMENTED"},
+				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
+				"admin2": {name: "admin2", status: "COMMENTED", commitID: "1"},
 			},
-			env:      Check{reviewContext: &ReviewContext{userLogin: "bar"}, Environment: env},
+			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
 			checkErr: require.Error,
-			desc:     "pull request does not have all required approvals",
+			desc:     "pull request with some required approvals, commit hashes match",
+			envConfig: environment.Config{
+				TeamSlug:         "team-name",
+				Org:              "org",
+				DefaultReviewers: []string{"admin", "admin2"},
+				Client:           github.NewClient(nil),
+				Token:            "12345",
+				Reviewers:        `{"ignored": ["bar", "baz"]}`,
+			},
+		},
+		{
+			obj: map[string]review{
+				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
+				"admin2": {name: "admin2", status: "COMMENTED", commitID: "2"},
+			},
+			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
+			checkErr: require.Error,
+			desc:     "pull request with some required approvals, commit hashes match",
+			envConfig: environment.Config{
+				TeamSlug:         "team-name",
+				Org:              "org",
+				DefaultReviewers: []string{"admin", "admin3"},
+				Client:           github.NewClient(nil),
+				Token:            "12345",
+				Reviewers:        `{"ignored": ["bar", "baz"]}`,
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			err := test.env.check(test.obj)
+			newEnv, err := environment.New(test.envConfig)
+			require.NoError(t, err)
+			test.c.Environment = newEnv
+
+			err = test.c.check(test.obj)
 			test.checkErr(t, err)
 		})
 	}
 
+}
+
+func teamMembersTestExternal(org, slug string, cl *github.Client) ([]string, error) {
+	return []string{}, nil
+}
+
+func teamMembersTest(org, slug string, cl *github.Client) ([]string, error) {
+	return []string{}, nil
+}
+
+func invalidateTest(repoOwner, repoName string, number int, reviews map[string]review, clt *github.Client) error {
+	return nil
 }
 
 const (
