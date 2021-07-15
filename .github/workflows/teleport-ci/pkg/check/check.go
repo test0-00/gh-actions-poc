@@ -97,7 +97,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 	if len(currentReviews) == 0 {
 		return trace.BadParameter("pull request has no reviews.")
 	}
-	required := c.Environment.GetReviewersForUser(c.reviewContext.userLogin)
+	required := c.Environment.GetReviewersForAuthor(c.reviewContext.author)
 	log.Printf("required reviewers %+v", required)
 
 	for _, requiredReviewer := range required {
@@ -110,7 +110,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 		}
 	}
 	// If all required reviewers have approved, check if author is external
-	ok, err := c.isInternal(c.reviewContext.userLogin)
+	ok, err := c.isInternal(c.reviewContext.author)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -121,7 +121,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 			if err != nil {
 				return trace.Wrap(err)
 			}
-			log.Printf("invalidating approvals for external contributor, %v", c.reviewContext.userLogin)
+			log.Printf("invalidating approvals for external contributor, %v", c.reviewContext.author)
 			return trace.BadParameter("all required reviewers have not yet approved.")
 		}
 	}
@@ -174,7 +174,9 @@ func (c *Check) SetReviewContext(path string) error {
 
 // ReviewContext is the pull request review metadata
 type ReviewContext struct {
-	userLogin string
+	author    string
+	// Only used for pull request review events
+	reviewer  string
 	repoName  string
 	repoOwner string
 	number    int
@@ -194,7 +196,7 @@ func (c *Check) setReviewContext(body []byte) error {
 		}
 		if push.Number != 0 && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.PullRequest.User.Login != "" && push.CommitSHA != "" {
 			c.reviewContext = &ReviewContext{
-				userLogin: push.PullRequest.User.Login,
+				author:    push.PullRequest.User.Login,
 				repoName:  push.Repository.Name,
 				repoOwner: push.Repository.Owner.Name,
 				number:    push.Number,
@@ -212,7 +214,8 @@ func (c *Check) setReviewContext(body []byte) error {
 
 		if rev.PullRequest.Number != 0 && rev.Review.User.Login != "" && rev.Repository.Name != "" && rev.Repository.Owner.Name != "" {
 			c.reviewContext = &ReviewContext{
-				userLogin: rev.Review.User.Login,
+				author:    rev.PullRequest.Author.Login,
+				reviewer:  rev.Review.User.Login,
 				repoName:  rev.Repository.Name,
 				repoOwner: rev.Repository.Owner.Name,
 				number:    rev.PullRequest.Number,

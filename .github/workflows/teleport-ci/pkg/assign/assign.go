@@ -53,7 +53,7 @@ func New(c Config) (*Assign, error) {
 // Assign assigns reviewers to the pull request
 func (a *Assign) Assign() error {
 	// Getting and setting reviewers for author of pull request
-	r := a.Environment.GetReviewersForUser(a.pullContext.userLogin)
+	r := a.Environment.GetReviewersForAuthor(a.pullContext.author)
 	client := a.Environment.Client
 	// Assigning reviewers to pull request
 	pr, _, err := client.PullRequests.RequestReviewers(context.TODO(),
@@ -73,7 +73,7 @@ func (a *Assign) Assign() error {
 
 // assign verifies reviewers are assigned
 func (a *Assign) assign(currentReviewers map[string]bool) error {
-	required := a.Environment.GetReviewersForUser(a.pullContext.userLogin)
+	required := a.Environment.GetReviewersForAuthor(a.pullContext.author)
 
 	for _, requiredReviewer := range required {
 		if !currentReviewers[requiredReviewer] {
@@ -107,7 +107,7 @@ func (a *Assign) setPullRequestContext(body []byte) error {
 	}
 	a.pullContext = &PullRequestContext{
 		number:    pr.Number,
-		userLogin: pr.PullRequest.User.Login,
+		author: pr.PullRequest.User.Login,
 		repoName:  pr.Repository.Name,
 		repoOwner: pr.Repository.Owner.Name,
 	}
@@ -117,7 +117,7 @@ func (a *Assign) setPullRequestContext(body []byte) error {
 // PullRequestContext contains information about the pull request event
 type PullRequestContext struct {
 	number    int
-	userLogin string
+	author string
 	repoName  string
 	repoOwner string
 }

@@ -83,7 +83,7 @@ func TestSetReviewContextValidReviewEvent(t *testing.T) {
 	err := ch.setReviewContext([]byte(validString))
 	require.NoError(t, err)
 	require.Equal(t, 2, ch.reviewContext.number)
-	require.Equal(t, "Codertocat", ch.reviewContext.userLogin)
+	require.Equal(t, "Codertocat", ch.reviewContext.author)
 	require.Equal(t, "Hello-World", ch.reviewContext.repoName)
 	require.Equal(t, "Codertocat", ch.reviewContext.repoOwner)
 }
@@ -127,7 +127,7 @@ func TestCheckInternal(t *testing.T) {
 	}{
 		{
 			obj:      map[string]review{},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "foo"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with no reviews",
 		},
@@ -135,7 +135,7 @@ func TestCheckInternal(t *testing.T) {
 			obj: map[string]review{
 				"bar": {name: "bar", status: "APPROVED", commitID: "1"},
 			},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "foo"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with one one review and approval, but not all required approvals",
 		},
@@ -144,7 +144,7 @@ func TestCheckInternal(t *testing.T) {
 				"bar": {name: "bar", status: "APPROVED", commitID: "1"},
 				"baz": {name: "baz", status: "APPROVED", commitID: "1"},
 			},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "foo"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
 			checkErr: require.NoError,
 			desc:     "pull request with all required approvals",
 		},
@@ -153,7 +153,7 @@ func TestCheckInternal(t *testing.T) {
 				"foo": {name: "foo", status: "APPROVED", commitID: "1"},
 				"car": {name: "car", status: "COMMENTED", commitID: "1"},
 			},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "foo"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "foo"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with one approval and one comment review",
 		},
@@ -162,7 +162,7 @@ func TestCheckInternal(t *testing.T) {
 				"admin": {name: "admin", status: "COMMENTED", commitID: "1"},
 				"foo":   {name: "foo", status: "COMMENTED", commitID: "1"},
 			},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "bar"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "bar"}, Environment: env, teamMembersFn: teamMembersTestInternal, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request does not have all required approvals",
 		},
@@ -188,7 +188,7 @@ func TestCheckExternal(t *testing.T) {
 				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
 				"admin2": {name: "admin2", status: "APPROVED", commitID: "2"},
 			},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with all required approvals, commit hashes do not match",
 			envConfig: environment.Config{
@@ -206,7 +206,7 @@ func TestCheckExternal(t *testing.T) {
 				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
 				"admin2": {name: "admin2", status: "APPROVED", commitID: "1"},
 			},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
 			checkErr: require.NoError,
 			desc:     "pull request with all required approvals, commit hashes hashes match",
 			envConfig: environment.Config{
@@ -223,7 +223,7 @@ func TestCheckExternal(t *testing.T) {
 				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
 				"admin2": {name: "admin2", status: "COMMENTED", commitID: "1"},
 			},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with no required approvals, commit hashes match",
 			envConfig: environment.Config{
@@ -240,7 +240,7 @@ func TestCheckExternal(t *testing.T) {
 				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
 				"admin2": {name: "admin2", status: "COMMENTED", commitID: "2"},
 			},
-			c:        Check{reviewContext: &ReviewContext{userLogin: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
+			c:        Check{reviewContext: &ReviewContext{author: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
 			checkErr: require.Error,
 			desc:     "pull request with some required approvals, commit hashes match",
 			envConfig: environment.Config{

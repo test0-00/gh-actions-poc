@@ -86,8 +86,8 @@ func unmarshalReviewers(str string) (map[string][]string, error) {
 	return m, nil
 }
 
-// GetReviewersForUser gets the required reviewers for the current user
-func (e *Environment) GetReviewersForUser(user string) []string {
+// GetReviewersForAuthor gets the required reviewers for the current user
+func (e *Environment) GetReviewersForAuthor(user string) []string {
 	value, ok := e.reviewers[user]
 	// author is external or does not have set reviewers
 	if !ok {
@@ -139,6 +139,7 @@ type User struct {
 
 // PullRequest contains information about the pull request (used for pull request review event)
 type PullRequest struct {
+	Author User `json:"user"`
 	Number int  `json:"number"`
 	Head   Head `json:"head"`
 }

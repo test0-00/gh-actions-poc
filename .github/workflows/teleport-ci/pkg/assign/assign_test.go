@@ -83,7 +83,7 @@ func TestPullRequestContextValid(t *testing.T) {
 	err := a.setPullRequestContext([]byte(validString))
 	require.NoError(t, err)
 	require.Equal(t, 2, a.pullContext.number)
-	require.Equal(t, "Codertocat", a.pullContext.userLogin)
+	require.Equal(t, "Codertocat", a.pullContext.author)
 	require.Equal(t, "Hello-World", a.pullContext.repoName)
 	require.Equal(t, "Codertocat", a.pullContext.repoOwner)
 
@@ -121,7 +121,7 @@ func TestAssign(t *testing.T) {
 	}{
 		{
 			obj:      map[string]bool{},
-			env:      Assign{pullContext: &PullRequestContext{userLogin: "foo"}, Environment: env},
+			env:      Assign{pullContext: &PullRequestContext{author: "foo"}, Environment: env},
 			checkErr: require.Error,
 			desc:     "no reviewers have been assigned",
 		},
@@ -130,7 +130,7 @@ func TestAssign(t *testing.T) {
 				"bar": true,
 				"baz": true,
 			},
-			env: Assign{pullContext: &PullRequestContext{userLogin: "foo"}, Environment: env},
+			env: Assign{pullContext: &PullRequestContext{author: "foo"}, Environment: env},
 
 			checkErr: require.NoError,
 			desc:     "assigning was successful",
@@ -139,7 +139,7 @@ func TestAssign(t *testing.T) {
 			obj: map[string]bool{
 				"bar": true,
 			},
-			env:      Assign{pullContext: &PullRequestContext{userLogin: "random"}, Environment: env},
+			env:      Assign{pullContext: &PullRequestContext{author: "random"}, Environment: env},
 			checkErr: require.Error,
 			desc:     "user does not exist in assigners",
 		},
