@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-go@v2
       # Run "assign-reviewers" subcommand on bot.
       - name: Assigning reviewers 
-        run: cd .github/workflows/teleport-ci && go run cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }} --assignments="{\"0xblush\":[\"quinqu\"], \"quinqu\":[\"russjones\"]}" assign-reviewers
+        run: cd .github/workflows/teleport-ci && go run cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }} --assignments="{\"0xblush\":[\"quinqu\"], \"quinqu\":[\"0xblush\"]}" assign-reviewers
 
       
 

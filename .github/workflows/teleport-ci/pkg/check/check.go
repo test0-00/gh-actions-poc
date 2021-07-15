@@ -3,7 +3,6 @@ package check
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,6 +28,7 @@ type Check struct {
 	reviewContext *ReviewContext
 	teamMembersFn teamMembersFn
 	invalidate    invalidate
+	action        string
 }
 
 type teamMembersFn func(string, string, *github.Client) ([]string, error)
@@ -93,7 +93,7 @@ type review struct {
 // check checks to see if all the required reviewers have approved and invalidates
 // approvals for external contributors if a new commit is pushed
 func (c *Check) check(currentReviews map[string]review) error {
-	if len(currentReviews) == 0 {
+	if len(currentReviews) == 0  {
 		return trace.BadParameter("pull request has no reviews.")
 	}
 	required := c.Environment.GetReviewersForUser(c.reviewContext.userLogin)
@@ -146,14 +146,22 @@ func (c *Check) hasNewCommit(revs map[string]review) bool {
 	return false
 }
 
+type action struct {
+	Action string `json:"action"`
+}
+
 // SetReviewContext sets reviewContext for Check
 func (c *Check) SetReviewContext(path string) error {
+	var actionType action
 	file, err := os.Open(path)
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	fmt.Println(file.Name())
 	body, err := ioutil.ReadAll(file)
+	if err != nil {
+		return trace.Wrap(err)
+	}
+	err = json.Unmarshal(body, &actionType)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -171,39 +179,43 @@ type ReviewContext struct {
 
 // setReviewContext extracts data from body and returns a new instance of pull request review
 func (c *Check) setReviewContext(body []byte) error {
-	// Used on review events
-	var rev environment.ReviewMetadata
-	err := json.Unmarshal(body, &rev)
-	if err != nil {
-		return trace.Wrap(err)
-	}
 
-	if rev.PullRequest.Number != 0 && rev.Review.User.Login != "" && rev.Repository.Name != "" && rev.Repository.Owner.Name != "" {
-		c.reviewContext = &ReviewContext{
-			userLogin: rev.Review.User.Login,
-			repoName:  rev.Repository.Name,
-			repoOwner: rev.Repository.Owner.Name,
-			number:    rev.PullRequest.Number,
-			headSHA:   rev.PullRequest.Head.SHA,
+	switch c.action {
+	case "synchronize":
+		// Used on push events
+		var push environment.PRMetadata
+		err := json.Unmarshal(body, &push)
+		if err != nil {
+			return trace.Wrap(err)
 		}
-		return nil
-	}
+		if push.Number != 0 && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.PullRequest.User.Login != "" && push.CommitSHA != "" {
+			c.reviewContext = &ReviewContext{
+				userLogin: push.PullRequest.User.Login,
+				repoName:  push.Repository.Name,
+				repoOwner: push.Repository.Owner.Name,
+				number:    push.Number,
+				headSHA:   push.CommitSHA,
+			}
+			return nil
+		}
+	default:
+		// Used on review events
+		var rev environment.ReviewMetadata
+		err := json.Unmarshal(body, &rev)
+		if err != nil {
+			return trace.Wrap(err)
+		}
 
-	// Used on push events
-	var push environment.PRMetadata
-	err = json.Unmarshal(body, &push)
-	if err != nil {
-		return trace.Wrap(err)
-	}
-	if push.Number != 0 && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.PullRequest.User.Login != "" && push.CommitSHA != "" {
-		c.reviewContext = &ReviewContext{
-			userLogin: push.PullRequest.User.Login,
-			repoName:  push.Repository.Name,
-			repoOwner: push.Repository.Owner.Name,
-			number:    push.Number,
-			headSHA:   push.CommitSHA,
+		if rev.PullRequest.Number != 0 && rev.Review.User.Login != "" && rev.Repository.Name != "" && rev.Repository.Owner.Name != "" {
+			c.reviewContext = &ReviewContext{
+				userLogin: rev.Review.User.Login,
+				repoName:  rev.Repository.Name,
+				repoOwner: rev.Repository.Owner.Name,
+				number:    rev.PullRequest.Number,
+				headSHA:   rev.PullRequest.Head.SHA,
+			}
+			return nil
 		}
-		return nil
 	}
 	return trace.BadParameter("insufficient data obtained.")
 }

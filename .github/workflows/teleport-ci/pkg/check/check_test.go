@@ -102,7 +102,7 @@ func TestSetReviewContextInvalidReviewEvent(t *testing.T) {
 }
 
 func TestSetReviewContextValidPushEvent(t *testing.T) {
-	ch := Check{Environment: &environment.Environment{Client: github.NewClient(nil)}}
+	ch := Check{Environment: &environment.Environment{Client: github.NewClient(nil)}, action: "synchronize"}
 	err := ch.setReviewContext([]byte(validStringSynchronize))
 	require.NoError(t, err)
 	require.Equal(t, 28, ch.reviewContext.number)
