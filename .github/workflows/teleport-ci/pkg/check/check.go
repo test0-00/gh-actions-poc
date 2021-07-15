@@ -167,6 +167,7 @@ func (c *Check) SetReviewContext(path string) error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
+	c.action = actionType.Action
 	return c.setReviewContext(body)
 }
 
