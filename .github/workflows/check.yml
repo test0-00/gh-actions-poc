@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@jane/ci
 
       - name: Installing the latest version of Go.
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@jane/ci
         # Run "check-reviewers" subcommand on bot.
       - name: Assigning reviewers 
         run: cd teleport-ci && go run cmd/bot.go --token ${{ secrets.GITHUB_TOKEN }} --assignments ${{ secrets.ASSIGNMENTS }} check-reviewers
