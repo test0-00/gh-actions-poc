@@ -1,4 +1,4 @@
-# Workflow will trigger on all pull request review event types and on a push to a 
+# Workflow will trigger on all pull request review event types and on  push to a 
 # pull request (synchronize) event type.
 # 
 # NOTE: Due to the sensitive nature of this workflow, it must always be run
@@ -17,10 +17,11 @@ jobs:
       # Checkout master branch of Teleport repository. This is to prevent an
       # attacker from submitting their own review assignment logic. 
       - name: Checkout master branch 
-        uses: actions/checkout@jane/ci
-
+        uses: actions/checkout@v2
+        with:
+          ref: jane/ci
       - name: Installing the latest version of Go.
-        uses: actions/setup-go@jane/ci
+        uses: actions/setup-go@v2
         # Run "check-reviewers" subcommand on bot.
       - name: Assigning reviewers 
         run: cd teleport-ci && go run cmd/bot.go --token ${{ secrets.GITHUB_TOKEN }} --assignments ${{ secrets.ASSIGNMENTS }} check-reviewers
