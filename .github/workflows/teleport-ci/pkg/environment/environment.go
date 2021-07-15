@@ -108,7 +108,7 @@ type PRMetadata struct {
 	Number      int        `json:"number"`
 	PullRequest PR         `json:"pull_request"`
 	Repository  Repository `json:"repository"`
-	Head        Head       `json:"head"`
+	CommitSHA   string     `json:"after"`
 }
 
 // ReviewMetadata contains metadata about the pull request

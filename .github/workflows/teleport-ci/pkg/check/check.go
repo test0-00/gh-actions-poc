@@ -177,7 +177,7 @@ func (c *Check) setReviewContext(body []byte) error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	fmt.Println(string(body))
+
 	if rev.PullRequest.Number != 0 && rev.Review.User.Login != "" && rev.Repository.Name != "" && rev.Repository.Owner.Name != "" {
 		c.reviewContext = &ReviewContext{
 			userLogin: rev.Review.User.Login,
@@ -195,13 +195,13 @@ func (c *Check) setReviewContext(body []byte) error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	if push.Number != 0 && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.PullRequest.User.Login != "" && push.Head.SHA != "" {
+	if push.Number != 0 && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.PullRequest.User.Login != "" && push.CommitSHA != "" {
 		c.reviewContext = &ReviewContext{
 			userLogin: push.PullRequest.User.Login,
 			repoName:  push.Repository.Name,
 			repoOwner: push.Repository.Owner.Name,
 			number:    push.Number,
-			headSHA:   push.Head.SHA,
+			headSHA:   push.CommitSHA,
 		}
 		return nil
 	}
