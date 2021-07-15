@@ -181,7 +181,7 @@ type ReviewContext struct {
 
 // setReviewContext extracts data from body and returns a new instance of pull request review
 func (c *Check) setReviewContext(body []byte) error {
-
+	log.Printf("action type %v", c.action)
 	switch c.action {
 	case "synchronize":
 		// Used on push events
