@@ -2,6 +2,7 @@ package environment
 
 import (
 	"encoding/json"
+	"log"
 
 	"github.com/google/go-github/v37/github"
 	"github.com/gravitational/trace"
@@ -90,8 +91,10 @@ func (e *Environment) GetReviewersForUser(user string) []string {
 	value, ok := e.reviewers[user]
 	// author is external or does not have set reviewers
 	if !ok {
+		log.Printf("getting default reviewers: %+v", e.defaultReviewers)
 		return e.defaultReviewers
 	}
+	log.Printf("getting reviewers for %+v: %+v", user, value)
 	return value
 }
 
