@@ -79,6 +79,7 @@ func (c *Check) Check() error {
 	for _, rev := range reviews {
 		currentReviews[*rev.User.Login] = review{name: *rev.User.Login, status: *rev.State, commitID: *rev.CommitID, id: *rev.ID}
 	}
+	log.Printf("current reviews: %+v", currentReviews)
 	return c.check(currentReviews)
 }
 
@@ -93,10 +94,11 @@ type review struct {
 // check checks to see if all the required reviewers have approved and invalidates
 // approvals for external contributors if a new commit is pushed
 func (c *Check) check(currentReviews map[string]review) error {
-	if len(currentReviews) == 0  {
+	if len(currentReviews) == 0 {
 		return trace.BadParameter("pull request has no reviews.")
 	}
 	required := c.Environment.GetReviewersForUser(c.reviewContext.userLogin)
+	log.Printf("required reviewers %+v", required)
 	for _, requiredReviewer := range required {
 		rev, ok := currentReviews[requiredReviewer]
 		if !ok {
