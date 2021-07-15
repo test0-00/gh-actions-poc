@@ -15,10 +15,10 @@ import (
 )
 
 func main() {
-	token := flag.String("token", "", "token is the Github authentication token.")
-	assignments := flag.String("assignments", "", "assigners is a string representing a json object that maps authors to reviewers.")
+	var token = flag.String("token", "", "token is the Github authentication token.")
+	var assignments = flag.String("assignments", "", "assigners is a string representing a json object that maps authors to reviewers.")
 
-    flag.Parse()
+	flag.Parse()
 
 	if *token == "" {
 		log.Fatal("missing authentication token.")
@@ -27,10 +27,7 @@ func main() {
 		log.Fatal("missing assignments string.")
 	}
 
-	args := os.Args[1:]
-	if len(args) != 1 {
-		panic("One argument needed \nassign-reviewers or check-reviewers")
-	}
+	subcommand := os.Args[len(os.Args)-1]
 
 	// Creating and authenticating the Github client
 	ctx := context.Background()
@@ -50,7 +47,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	switch args[0] {
+	switch subcommand {
 	case ci.ASSIGN:
 		log.Println("Assigning reviewers...")
 		cfg := assign.Config{
@@ -81,9 +78,7 @@ func main() {
 			log.Fatal(err)
 		}
 	default:
-		log.Fatalf("Unknown subcommand: %v", args[0])
+		log.Fatalf("Unknown subcommand: %v", subcommand)
 	}
 
 }
-
-

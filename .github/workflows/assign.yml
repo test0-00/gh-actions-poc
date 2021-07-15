@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-go@v2
       # Run "assign-reviewers" subcommand on bot.
       - name: Assigning reviewers 
-        run: cd teleport-ci && make assign --token ${{ secrets.GITHUB_TOKEN }} --assignments ${{ secrets.ASSIGNMENTS }}
+        run: cd teleport-ci && go run cmd/bot.go --token ${{ secrets.GITHUB_TOKEN }} --assignments ${{ secrets.ASSIGNMENTS }} assign-reviewers
       
 
 
