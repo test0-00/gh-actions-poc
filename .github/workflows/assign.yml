@@ -8,7 +8,9 @@
 # While it's tempting to use "pull_request_target" which automatically runs
 # on the base of the PR, that target also grants the GITHUB_TOKEN write access
 # to the repository.
-on: pull_request
+on: 
+  pull_request:
+    [opened, edited, reopened, ready_for_review]
  
 jobs:
   auto-request-review:
