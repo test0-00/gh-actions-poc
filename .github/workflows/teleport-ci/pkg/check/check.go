@@ -99,6 +99,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 	}
 	required := c.Environment.GetReviewersForUser(c.reviewContext.userLogin)
 	log.Printf("required reviewers %+v", required)
+
 	for _, requiredReviewer := range required {
 		rev, ok := currentReviews[requiredReviewer]
 		if !ok {
@@ -225,17 +226,17 @@ func (c *Check) setReviewContext(body []byte) error {
 
 // isInternal determines if an author is an internal contributor
 func (c *Check) isInternal(author string) (bool, error) {
-	members, err := c.teamMembersFn(c.Environment.Org, c.Environment.TeamSlug, c.Environment.Client)
-	if err != nil {
-		return false, trace.Wrap(err)
-	}
-	if !contains(members, author) {
-		return false, nil
-	}
-	revs := c.Environment.GetReviewersForUser(author)
-	if revs == nil {
-		return false, nil
-	}
+	// members, err := c.teamMembersFn(c.Environment.Org, c.Environment.TeamSlug, c.Environment.Client)
+	// if err != nil {
+	// 	return false, trace.Wrap(err)
+	// }
+	// if !contains(members, author) {
+	// 	return false, nil
+	// }
+	// revs := c.Environment.GetReviewersForUser(author)
+	// if revs == nil {
+	// 	return false, nil
+	// }
 	return true, nil
 }
 
