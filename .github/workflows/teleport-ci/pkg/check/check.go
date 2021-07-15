@@ -3,6 +3,7 @@ package check
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -89,7 +90,7 @@ type review struct {
 	id       int64
 }
 
-// check checks to see if all the required reviewers have approved and invalidates 
+// check checks to see if all the required reviewers have approved and invalidates
 // approvals for external contributors if a new commit is pushed
 func (c *Check) check(currentReviews map[string]review) error {
 	if len(currentReviews) == 0 {
@@ -139,7 +140,7 @@ func invalidateApprovals(repoOwner, repoName string, number int, reviews map[str
 func (c *Check) hasNewCommit(revs map[string]review) bool {
 	for _, v := range revs {
 		if v.commitID != c.reviewContext.headSHA {
-			return true 
+			return true
 		}
 	}
 	return false
@@ -151,6 +152,7 @@ func (c *Check) SetReviewContext(path string) error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
+	fmt.Println(file.Name())
 	body, err := ioutil.ReadAll(file)
 	if err != nil {
 		return trace.Wrap(err)
@@ -164,7 +166,7 @@ type ReviewContext struct {
 	repoName  string
 	repoOwner string
 	number    int
-	headSHA string 
+	headSHA   string
 }
 
 // setReviewContext extracts data from body and returns a new instance of pull request review
@@ -175,13 +177,14 @@ func (c *Check) setReviewContext(body []byte) error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
+	fmt.Println(string(body))
 	if rev.PullRequest.Number != 0 && rev.Review.User.Login != "" && rev.Repository.Name != "" && rev.Repository.Owner.Name != "" {
 		c.reviewContext = &ReviewContext{
 			userLogin: rev.Review.User.Login,
 			repoName:  rev.Repository.Name,
 			repoOwner: rev.Repository.Owner.Name,
 			number:    rev.PullRequest.Number,
-			headSHA: rev.PullRequest.Head.SHA,
+			headSHA:   rev.PullRequest.Head.SHA,
 		}
 		return nil
 	}
@@ -192,15 +195,15 @@ func (c *Check) setReviewContext(body []byte) error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	if push.Number != 0  && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.PullRequest.User.Login != "" && push.Head.SHA != "" {
+	if push.Number != 0 && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.PullRequest.User.Login != "" && push.Head.SHA != "" {
 		c.reviewContext = &ReviewContext{
 			userLogin: push.PullRequest.User.Login,
 			repoName:  push.Repository.Name,
 			repoOwner: push.Repository.Owner.Name,
 			number:    push.Number,
-			headSHA: push.Head.SHA,
+			headSHA:   push.Head.SHA,
 		}
-		return nil 
+		return nil
 	}
 	return trace.BadParameter("insufficient data obtained.")
 }
