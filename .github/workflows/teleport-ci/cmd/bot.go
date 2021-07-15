@@ -42,7 +42,10 @@ func main() {
 
 	env, err := environment.New(environment.Config{Client: client,
 		Token:     *token,
-		Reviewers: *assignments})
+		Reviewers: *assignments, 
+		TeamSlug: "dev-team",
+		Org: "gravitational", 
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
