@@ -1,4 +1,5 @@
-# Workflow will trigger on all pull request review event types and on the push event type.
+# Workflow will trigger on all pull request review event types and on a push to a 
+# pull request (synchronize) event type.
 # 
 # NOTE: Due to the sensitive nature of this workflow, it must always be run
 # against master AND with minimal permissions. These properties must always
