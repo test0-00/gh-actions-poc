@@ -20,12 +20,12 @@ type Config struct {
 
 // Environment contains information about the environment
 type Environment struct {
-	Client    *github.Client
-	reviewers map[string][]string
+	Client           *github.Client
+	reviewers        map[string][]string
 	defaultReviewers []string
-	token     string
-	TeamSlug string
-	Org      string
+	token            string
+	TeamSlug         string
+	Org              string
 }
 
 // CheckAndSetDefaults verifies configuration and sets defaults
@@ -108,6 +108,7 @@ type PRMetadata struct {
 	Number      int        `json:"number"`
 	PullRequest PR         `json:"pull_request"`
 	Repository  Repository `json:"repository"`
+	Head        Head       `json:"head"`
 }
 
 // ReviewMetadata contains metadata about the pull request
@@ -118,17 +119,9 @@ type ReviewMetadata struct {
 	PullRequest PullRequest `json:"pull_request"`
 }
 
-// PushMetadata contains metadata about the push event
-type PushMetadata struct {
-	Pusher     Pusher     `json:"pusher"`
-	Repository Repository `json:"repository"`
-	// After is the SHA of the most recent commit on ref after the push.
-	After string `json:"after"`
-}
-
-// Pusher represents the author of the push event
-type Pusher struct {
-	Name string `json:"name"`
+// Head contains the commit sha at the head of the pull request
+type Head struct {
+	SHA string `json:"sha"`
 }
 
 // Review contains information about the pull request review
@@ -143,7 +136,8 @@ type User struct {
 
 // PullRequest contains information about the pull request (used for pull request review event)
 type PullRequest struct {
-	Number int `json:"number"`
+	Number int  `json:"number"`
+	Head   Head `json:"head"`
 }
 
 // PR contains information about the pull request (used for the pull request event)

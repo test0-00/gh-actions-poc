@@ -30,7 +30,6 @@ type Check struct {
 	invalidate    invalidate
 }
 
-type getPRNumber func(string, string, string, *github.Client) (int, error)
 type teamMembersFn func(string, string, *github.Client) ([]string, error)
 type invalidate func(string, string, int, map[string]review, *github.Client) error
 
@@ -113,12 +112,12 @@ func (c *Check) check(currentReviews map[string]review) error {
 	}
 	if !ok {
 		// If all required reviewers reviewed, check if commit shas are all the same
-		if hasNewCommit(currentReviews) {
+		if c.hasNewCommit(currentReviews) {
 			err := c.invalidate(c.reviewContext.repoOwner, c.reviewContext.repoName, c.reviewContext.number, currentReviews, c.Environment.Client)
 			if err != nil {
 				return trace.Wrap(err)
 			}
-			log.Print("invalidating approvals for external contributor.")
+			log.Printf("invalidating approvals for external contributor, %v", c.reviewContext.userLogin)
 			return trace.BadParameter("all required reviewers have not yet approved.")
 		}
 	}
@@ -137,21 +136,11 @@ func invalidateApprovals(repoOwner, repoName string, number int, reviews map[str
 
 // hasNewCommit sees if the pull request has a new commit
 // by comparing commits after the push event
-func hasNewCommit(revs map[string]review) bool {
-	var reviews []review
-	if len(revs) == 1 {
-		// TODO: if a PR has 1 commit, check if it is the most recent 
-		return false
-	}
+func (c *Check) hasNewCommit(revs map[string]review) bool {
 	for _, v := range revs {
-		reviews = append(reviews, v)
-	}
-	i := 0
-	for i < len(reviews)-1 {
-		if reviews[i].commitID != reviews[i+1].commitID {
-			return true
+		if v.commitID != c.reviewContext.headSHA {
+			return true 
 		}
-		i++
 	}
 	return false
 }
@@ -166,7 +155,7 @@ func (c *Check) SetReviewContext(path string) error {
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	return c.setReviewContext(body, getPullRequestNumber)
+	return c.setReviewContext(body)
 }
 
 // ReviewContext is the pull request review metadata
@@ -175,10 +164,11 @@ type ReviewContext struct {
 	repoName  string
 	repoOwner string
 	number    int
+	headSHA string 
 }
 
 // setReviewContext extracts data from body and returns a new instance of pull request review
-func (c *Check) setReviewContext(body []byte, fn getPRNumber) error {
+func (c *Check) setReviewContext(body []byte) error {
 	// Used on review events
 	var rev environment.ReviewMetadata
 	err := json.Unmarshal(body, &rev)
@@ -191,49 +181,28 @@ func (c *Check) setReviewContext(body []byte, fn getPRNumber) error {
 			repoName:  rev.Repository.Name,
 			repoOwner: rev.Repository.Owner.Name,
 			number:    rev.PullRequest.Number,
+			headSHA: rev.PullRequest.Head.SHA,
 		}
 		return nil
 	}
 
 	// Used on push events
-	var push environment.PushMetadata
+	var push environment.PRMetadata
 	err = json.Unmarshal(body, &push)
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	if push.Pusher.Name != "" && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.After != "" {
-		// Get pull request number
-		clt := c.Environment.Client
-		prNumber, err := fn(push.Repository.Owner.Name, push.Repository.Name, push.After, clt)
-		if err != nil {
-			return trace.Wrap(err)
-		}
+	if push.Number != 0  && push.Repository.Name != "" && push.Repository.Owner.Name != "" && push.PullRequest.User.Login != "" && push.Head.SHA != "" {
 		c.reviewContext = &ReviewContext{
-			userLogin: push.Pusher.Name,
+			userLogin: push.PullRequest.User.Login,
 			repoName:  push.Repository.Name,
 			repoOwner: push.Repository.Owner.Name,
-			number:    prNumber,
+			number:    push.Number,
+			headSHA: push.Head.SHA,
 		}
+		return nil 
 	}
 	return trace.BadParameter("insufficient data obtained.")
-}
-
-// getPullRequestNumber gets the pull request number associated with a commit sha
-// this is used for `push` events because the event payload does not include the pull request number
-// as `push` events can occur without a pull request.
-func getPullRequestNumber(owner, repo, commitSha string, clt *github.Client) (int, error) {
-	pulls, _, err := clt.PullRequests.ListPullRequestsWithCommit(context.TODO(), owner, repo, commitSha, nil)
-	if err != nil {
-		return -1, err
-	}
-	switch len(pulls) {
-	case 0:
-		return -1, trace.NotFound("pull request not found.")
-
-	case 1:
-		return -1, trace.BadParameter("ambiguous pull request, cannot determine number.")
-	}
-	return *pulls[0].Number, nil
 }
 
 // isInternal determines if an author is an internal contributor
