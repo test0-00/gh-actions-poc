@@ -98,7 +98,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 		return trace.BadParameter("pull request has no reviews.")
 	}
 	required := c.Environment.GetReviewersForAuthor(c.reviewContext.author)
-	log.Printf("required reviewers %+v", required)
+	log.Printf("checking if %v has approvals from the required reviewers %+v", c.reviewContext.author, required)
 
 	for _, requiredReviewer := range required {
 		rev, ok := currentReviews[requiredReviewer]
@@ -185,7 +185,6 @@ type ReviewContext struct {
 
 // setReviewContext extracts data from body and returns a new instance of pull request review
 func (c *Check) setReviewContext(body []byte) error {
-	log.Printf("action type %v", c.action)
 	switch c.action {
 	case "synchronize":
 		// Used on push events

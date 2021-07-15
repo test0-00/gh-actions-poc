@@ -66,6 +66,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Print("Assign completed.")
 
 	case ci.CHECK:
 		log.Println("Checking reviewers...")
@@ -81,6 +82,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Print("Check completed.")
 	default:
 		log.Fatalf("Unknown subcommand: %v", subcommand)
 	}
