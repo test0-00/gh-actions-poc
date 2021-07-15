@@ -23,7 +23,6 @@ jobs:
       - name: Installing the latest version of Go.
         uses: actions/setup-go@v2
         # Run "check-reviewers" subcommand on bot.
-      - name: Assigning reviewers 
-        run: pwd 
-        #run: cd teleport-ci && go run cmd/bot.go --token ${{ secrets.GITHUB_TOKEN }} --assignments ${{ secrets.ASSIGNMENTS }} check-reviewers
+      - name: Assigning reviewers
+        run: go run .github/workflows/teleport-ci/cmd/bot.go --token ${{ secrets.GITHUB_TOKEN }} --assignments ${{ secrets.ASSIGNMENTS }} check-reviewers
 
