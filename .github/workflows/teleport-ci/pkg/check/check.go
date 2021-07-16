@@ -136,6 +136,7 @@ func invalidateApprovals(repoOwner, repoName, msg string, number int, reviews ma
 	return nil
 }
 
+// dimissMessage returns the dimiss message when a review is dismissed
 func (c *Check) dismissMessage() string {
 	var buffer bytes.Buffer
 	required := c.Environment.GetReviewersForAuthor(c.reviewContext.author)
