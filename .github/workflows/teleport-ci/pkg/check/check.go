@@ -113,7 +113,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 	if !c.Environment.IsInternal(c.reviewContext.author) {
 		// If all required reviewers reviewed, check if commit shas are all the same
 		if c.hasNewCommit(currentReviews) {
-			err := c.invalidate(c.reviewContext.repoOwner, c.dismissMessage(), c.reviewContext.repoName, c.reviewContext.number, currentReviews, c.Environment.Client)
+			err := c.invalidate(c.reviewContext.repoOwner, c.reviewContext.repoName, c.dismissMessage(), c.reviewContext.number, currentReviews, c.Environment.Client)
 			if err != nil {
 				return trace.Wrap(err)
 			}
@@ -143,7 +143,7 @@ func (c *Check) dismissMessage() string {
 	for _, reviewer := range required {
 		buffer.WriteString(fmt.Sprintf("@%v ", reviewer))
 	}
-	
+
 	return buffer.String()
 }
 
