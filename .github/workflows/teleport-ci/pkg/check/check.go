@@ -111,11 +111,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 		}
 	}
 	// If all required reviewers have approved, check if author is external
-	ok, err := c.isInternal(c.reviewContext.author)
-	if err != nil {
-		return trace.Wrap(err)
-	}
-	if !ok {
+	if !c.isInternal() {
 		// If all required reviewers reviewed, check if commit shas are all the same
 		if c.hasNewCommit(currentReviews) {
 			err := c.invalidate(c.reviewContext.repoOwner, c.reviewContext.repoName, c.reviewContext.number, currentReviews, c.Environment.Client)
@@ -130,7 +126,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 }
 
 func invalidateApprovals(repoOwner, repoName string, number int, reviews map[string]review, clt *github.Client) error {
-	msg := fmt.Sprint("bot.")
+	msg := fmt.Sprint("Bot.")
 	for _, v := range reviews {
 		_, _, err := clt.PullRequests.DismissReview(context.TODO(), repoOwner, repoName, number, v.id, &github.PullRequestReviewDismissalRequest{Message: &msg})
 		if err != nil {
@@ -174,7 +170,7 @@ func (c *Check) SetReviewContext(path string) error {
 	return c.setReviewContext(body)
 }
 
-// ReviewContext is the pull request review metadata
+// ReviewContext is the pull request context for review and synchronize actions
 type ReviewContext struct {
 	author string
 	// Only used for pull request review events
@@ -229,20 +225,22 @@ func (c *Check) setReviewContext(body []byte) error {
 }
 
 // isInternal determines if an author is an internal contributor
-func (c *Check) isInternal(author string) (bool, error) {
+func (c *Check) isInternal() bool {
 	members, err := c.teamMembersFn(c.Environment.Org, c.Environment.TeamSlug, c.Environment.Client)
 	if err != nil {
 		log.Printf("failed to evaluate if author %v is part of %v: %v", c.reviewContext.author, c.Environment.TeamSlug, err)
-		return false, nil
+		return false
 	}
-	if !contains(members, author) {
-		return false, nil
+	if !contains(members, c.reviewContext.author) {
+		return false
 	}
-	revs := c.Environment.GetReviewersForAuthor(author)
+
+	revs := c.Environment.GetReviewersForAuthor(c.reviewContext.author)
 	if revs == nil {
-		return false, nil
+
+		return false
 	}
-	return true, nil
+	return true
 }
 
 func contains(slice []string, value string) bool {

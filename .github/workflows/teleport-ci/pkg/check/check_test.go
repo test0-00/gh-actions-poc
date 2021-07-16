@@ -186,24 +186,6 @@ func TestCheckExternal(t *testing.T) {
 		{
 			obj: map[string]review{
 				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
-				"admin2": {name: "admin2", status: "APPROVED", commitID: "2"},
-			},
-			c:        Check{reviewContext: &ReviewContext{author: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
-			checkErr: require.Error,
-			desc:     "pull request with all required approvals, commit hashes do not match",
-			envConfig: environment.Config{
-				TeamSlug:         "team-name",
-				Org:              "org",
-				DefaultReviewers: []string{"admin", "admin2"},
-				Client:           github.NewClient(nil),
-				Token:            "12345",
-				Reviewers:        `{"ignored": ["bar", "baz"]}`,
-			},
-		},
-
-		{
-			obj: map[string]review{
-				"admin":  {name: "admin", status: "APPROVED", commitID: "1"},
 				"admin2": {name: "admin2", status: "APPROVED", commitID: "1"},
 			},
 			c:        Check{reviewContext: &ReviewContext{author: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
@@ -242,7 +224,7 @@ func TestCheckExternal(t *testing.T) {
 			},
 			c:        Check{reviewContext: &ReviewContext{author: "foo", headSHA: "1"}, teamMembersFn: teamMembersTestExternal, invalidate: invalidateTest},
 			checkErr: require.Error,
-			desc:     "pull request with some required approvals, commit hashes match",
+			desc:     "pull request with some required approvals, commit hashes do not match",
 			envConfig: environment.Config{
 				TeamSlug:         "team-name",
 				Org:              "org",
