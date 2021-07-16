@@ -174,7 +174,7 @@ func (c *Check) SetReviewContext(path string) error {
 
 // ReviewContext is the pull request review metadata
 type ReviewContext struct {
-	author    string
+	author string
 	// Only used for pull request review events
 	reviewer  string
 	repoName  string
@@ -228,17 +228,17 @@ func (c *Check) setReviewContext(body []byte) error {
 
 // isInternal determines if an author is an internal contributor
 func (c *Check) isInternal(author string) (bool, error) {
-	// members, err := c.teamMembersFn(c.Environment.Org, c.Environment.TeamSlug, c.Environment.Client)
-	// if err != nil {
-	// 	return false, trace.Wrap(err)
-	// }
-	// if !contains(members, author) {
-	// 	return false, nil
-	// }
-	// revs := c.Environment.GetReviewersForUser(author)
-	// if revs == nil {
-	// 	return false, nil
-	// }
+	members, err := c.teamMembersFn(c.Environment.Org, c.Environment.TeamSlug, c.Environment.Client)
+	if err != nil {
+		return false, trace.Wrap(err)
+	}
+	if !contains(members, author) {
+		return false, nil
+	}
+	revs := c.Environment.GetReviewersForAuthor(author)
+	if revs == nil {
+		return false, nil
+	}
 	return true, nil
 }
 
