@@ -24,8 +24,8 @@ jobs:
       - name: Installing the latest version of Go.
         uses: actions/setup-go@v2
       - name: path 
-        run: echo ${{GITHUB_ACTION_PATH}}
+        run: echo ${{github.action_path}}
         # Run "check-reviewers" subcommand on bot.
       - name: Checking reviewers
-        run: cd ${{GITHUB_ACTION_PATH}} && go run teleport-ci/cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }} --assignments="{\"0xblush\":[\"quinqu\"], \"quinqu\":[\"0xblush\"]}" check-reviewers
+        run: cd ${{github.action_path}} && go run teleport-ci/cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }} --assignments="{\"0xblush\":[\"quinqu\"], \"quinqu\":[\"0xblush\"]}" check-reviewers
 
