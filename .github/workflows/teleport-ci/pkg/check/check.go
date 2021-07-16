@@ -143,6 +143,7 @@ func (c *Check) dismissMessage() string {
 	for _, reviewer := range required {
 		buffer.WriteString(fmt.Sprintf("@%v ", reviewer))
 	}
+	
 	return buffer.String()
 }
 
