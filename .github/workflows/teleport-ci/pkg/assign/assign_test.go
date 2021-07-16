@@ -56,6 +56,7 @@ func TestNewAssign(t *testing.T) {
 	config = Config{
 		EventPath:   filePath,
 		Environment: env,
+		Reviewers: `{"author": ["reviewer"]}`,
 	}
 	assign, err = New(config)
 	require.NoError(t, err)

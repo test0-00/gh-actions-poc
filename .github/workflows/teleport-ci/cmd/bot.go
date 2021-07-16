@@ -6,11 +6,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/google/go-github/v37/github"
 	ci "github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/assign"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/check"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/environment"
+
+	"github.com/google/go-github/v37/github"
 	"golang.org/x/oauth2"
 )
 
@@ -41,10 +42,10 @@ func main() {
 	path := os.Getenv(ci.GITHUBEVENTPATH)
 
 	env, err := environment.New(environment.Config{Client: client,
-		Token:     *token,
-		Reviewers: *assignments, 
-		TeamSlug: "dev-team",
-		Org: "gravitational", 
+		Token:            *token,
+		Reviewers:        *assignments,
+		TeamSlug:         "dev-team",
+		Org:              "gravitational",
 		DefaultReviewers: []string{"quinqu"},
 	})
 	if err != nil {

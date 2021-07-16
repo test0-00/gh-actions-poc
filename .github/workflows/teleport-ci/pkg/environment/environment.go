@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/google/go-github/v37/github"
 	"github.com/gravitational/trace"
+
+	"github.com/google/go-github/v37/github"
 )
 
 // Config is used to configure Environment
@@ -22,11 +23,11 @@ type Config struct {
 // Environment contains information about the environment
 type Environment struct {
 	Client           *github.Client
+	TeamSlug         string
+	Org              string
 	reviewers        map[string][]string
 	defaultReviewers []string
 	token            string
-	TeamSlug         string
-	Org              string
 }
 
 // CheckAndSetDefaults verifies configuration and sets defaults

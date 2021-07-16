@@ -18,7 +18,6 @@ import (
 // Config is used to configure Check
 type Config struct {
 	EventPath   string
-	Token       string
 	Reviewers   string
 	Environment *environment.Environment
 }
@@ -59,6 +58,9 @@ func (c *Config) CheckAndSetDefaults() error {
 	}
 	if c.EventPath == "" {
 		return trace.BadParameter("missing parameter EventPath.")
+	}
+	if c.Reviewers == "" {
+		return trace.BadParameter("missing parameter Reviewers.")
 	}
 	return nil
 }
@@ -110,7 +112,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 			return trace.BadParameter("all required reviewers have not yet approved.")
 		}
 	}
-	// If all required reviewers have approved, check if author is external
+	//  Check if author is an external contributor
 	if !c.isInternal() {
 		// If all required reviewers reviewed, check if commit shas are all the same
 		if c.hasNewCommit(currentReviews) {
@@ -125,6 +127,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 	return nil
 }
 
+// invalidateApprovals dismisses all reviews on a pull request 
 func invalidateApprovals(repoOwner, repoName string, number int, reviews map[string]review, clt *github.Client) error {
 	msg := fmt.Sprint("Bot.")
 	for _, v := range reviews {

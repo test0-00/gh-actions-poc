@@ -6,8 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/google/go-github/v37/github"
 	"github.com/gravitational/gh-actions-poc/.github/workflows/teleport-ci/pkg/environment"
+
+	"github.com/google/go-github/v37/github"
 	"github.com/gravitational/trace"
 )
 
@@ -31,6 +32,9 @@ func (c *Config) CheckAndSetDefaults() error {
 	}
 	if c.EventPath == "" {
 		return trace.BadParameter("missing parameter EventPath.")
+	}
+	if c.Reviewers == "" {
+		return trace.BadParameter("missing parameter Reviewers.")
 	}
 	return nil
 }
