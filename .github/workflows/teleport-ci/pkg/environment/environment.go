@@ -105,8 +105,10 @@ func (e *Environment) IsInternal(author string) bool {
 	if !ok {
 		return false
 	}
-	return true
+	//return true
+	return false
 }
+
 /*
    Below are struct definitions used to transform pull request and review
    events (represented as a json object) into Golang structs. The way these objects are
