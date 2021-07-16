@@ -3,6 +3,7 @@ package check
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -129,8 +130,9 @@ func (c *Check) check(currentReviews map[string]review) error {
 }
 
 func invalidateApprovals(repoOwner, repoName string, number int, reviews map[string]review, clt *github.Client) error {
+	msg := fmt.Sprint("bot.")
 	for _, v := range reviews {
-		_, _, err := clt.PullRequests.DismissReview(context.TODO(), repoOwner, repoName, number, v.id, &github.PullRequestReviewDismissalRequest{})
+		_, _, err := clt.PullRequests.DismissReview(context.TODO(), repoOwner, repoName, number, v.id, &github.PullRequestReviewDismissalRequest{Message: &msg})
 		if err != nil {
 			return trace.Wrap(err)
 		}
