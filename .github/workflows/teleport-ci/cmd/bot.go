@@ -46,7 +46,7 @@ func main() {
 		Reviewers:        *assignments,
 		TeamSlug:         "dev-team",
 		Org:              "gravitational",
-		DefaultReviewers: []string{"quinqu"},
+		DefaultReviewers: []string{"quinqu", "russjones"},
 	})
 	if err != nil {
 		log.Fatal(err)
