@@ -10,7 +10,7 @@
 # to the repository.
 on: 
   pull_request:
-    [opened, edited, reopened, ready_for_review]
+    types: ['!synchronize']
  
 jobs:
   auto-request-review:
