@@ -158,6 +158,7 @@ func (c *Check) hasNewCommit(revs map[string]review) bool {
 	return false
 }
 
+// action represents the current action
 type action struct {
 	Action string `json:"action"`
 }
