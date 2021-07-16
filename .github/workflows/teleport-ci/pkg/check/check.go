@@ -230,7 +230,8 @@ func (c *Check) setReviewContext(body []byte) error {
 func (c *Check) isInternal(author string) (bool, error) {
 	members, err := c.teamMembersFn(c.Environment.Org, c.Environment.TeamSlug, c.Environment.Client)
 	if err != nil {
-		return false, trace.Wrap(err)
+		log.Printf("failed to evaluate if author %v is part of %v: %v", c.reviewContext.author, c.Environment.TeamSlug, err)
+		return false, nil
 	}
 	if !contains(members, author) {
 		return false, nil
