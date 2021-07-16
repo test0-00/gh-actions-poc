@@ -1,6 +1,7 @@
 package check
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -31,7 +32,7 @@ type Check struct {
 }
 
 type teamMembersFn func(string, string, *github.Client) ([]string, error)
-type invalidate func(string, string, int, map[string]review, *github.Client) error
+type invalidate func(string, string, string, int, map[string]review, *github.Client) error
 
 // New returns a new instance of  Check
 func New(c Config) (*Check, error) {
@@ -112,7 +113,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 	if !c.isInternal() {
 		// If all required reviewers reviewed, check if commit shas are all the same
 		if c.hasNewCommit(currentReviews) {
-			err := c.invalidate(c.reviewContext.repoOwner, c.reviewContext.repoName, c.reviewContext.number, currentReviews, c.Environment.Client)
+			err := c.invalidate(c.reviewContext.repoOwner, c.dismissMessage(), c.reviewContext.repoName, c.reviewContext.number, currentReviews, c.Environment.Client)
 			if err != nil {
 				return trace.Wrap(err)
 			}
@@ -123,9 +124,9 @@ func (c *Check) check(currentReviews map[string]review) error {
 	return nil
 }
 
-// invalidateApprovals dismisses all reviews on a pull request 
-func invalidateApprovals(repoOwner, repoName string, number int, reviews map[string]review, clt *github.Client) error {
-	msg := fmt.Sprint("Bot.")
+// invalidateApprovals dismisses all reviews on a pull request
+func invalidateApprovals(repoOwner, repoName, msg string, number int, reviews map[string]review, clt *github.Client) error {
+	// TODO: tag reviewers
 	for _, v := range reviews {
 		_, _, err := clt.PullRequests.DismissReview(context.TODO(), repoOwner, repoName, number, v.id, &github.PullRequestReviewDismissalRequest{Message: &msg})
 		if err != nil {
@@ -133,6 +134,16 @@ func invalidateApprovals(repoOwner, repoName string, number int, reviews map[str
 		}
 	}
 	return nil
+}
+
+func (c *Check) dismissMessage() string {
+	var buffer bytes.Buffer
+	required := c.Environment.GetReviewersForAuthor(c.reviewContext.author)
+	buffer.WriteString("New commit pushed, please rereview ")
+	for _, reviewer := range required {
+		buffer.WriteString(fmt.Sprintf("@%v ", reviewer))
+	}
+	return buffer.String()
 }
 
 // hasNewCommit sees if the pull request has a new commit

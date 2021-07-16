@@ -1,3 +1,4 @@
+# This workflow is run whenever a Pull Request is opened, re-opened, or taken
 # out of draft (ready for review).
 #
 # NOTE: Due to the sensitive nature of this workflow, it must always be run

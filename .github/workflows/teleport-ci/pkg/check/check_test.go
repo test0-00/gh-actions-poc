@@ -257,7 +257,7 @@ func teamMembersTestInternal(org, slug string, cl *github.Client) ([]string, err
 	return []string{"foo", "bar"}, nil
 }
 
-func invalidateTest(repoOwner, repoName string, number int, reviews map[string]review, clt *github.Client) error {
+func invalidateTest(repoOwner, repoName, msg string, number int, reviews map[string]review, clt *github.Client) error {
 	return nil
 }
 
