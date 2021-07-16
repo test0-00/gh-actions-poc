@@ -1,32 +1,34 @@
+# This workflow is run whenever a Pull Request is opened, re-opened, or taken
+# out of draft (ready for review).
+#
+# NOTE: Due to the sensitive nature of this workflow, it must always be run
+# against master AND with minimal permissions. These properties must always
+# be maintained!
+#
+# While it's tempting to use "pull_request_target" which automatically runs
+# on the base of the PR, that target also grants the GITHUB_TOKEN write access
+# to the repository.
 on: 
-  pull_request_target: 
-    paths-ignore: '.github/workflows/**'
-  
+  pull_request:
+    types: ['!synchronize']
+ 
 jobs:
   auto-request-review:
     name: Auto Request Review
     runs-on: ubuntu-latest
     steps:
-        # Check out master branch
-      - name: Check out branch 
-        uses: actions/checkout@master
-        # Install Go  
-      - name: Installing Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: '1.15.13'
-      - name: Creating directories
-        run: sudo mkdir -p $GOPATH/github/google
-      - name: Installing Go-github
-        run: sudo git clone https://github.com/google/go-github.git $GOPATH/src/github/google
-      - name: Updating dependencies...
-        run: cd $GOPATH/src/github/google/go-github && go get -u -v ./... 
-        # Run command
+      # Checkout master branch of Teleport repository. This is to prevent an
+      # attacker from submitting their own review assignment logic.
+      - name: Checkout master branch
+        uses: actions/checkout@v2
+        with: 
+          ref: jane/ci
+        
+      - name: Installing the latest version of Go.
+        uses: actions/setup-go@v2
+      # Run "assign-reviewers" subcommand on bot.
       - name: Assigning reviewers 
-        run: go run .github/workflows/bot.go assign-reviewers
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GO111MODULE: auto
+        run: cd .github/workflows/teleport-ci && go run cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }} --assignments="{\"0xblush\":[\"quinqu\"], \"quinqu\":[\"0xblush\"]}" assign-reviewers
 
       
 

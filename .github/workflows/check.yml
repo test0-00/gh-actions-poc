@@ -1,24 +1,29 @@
-# Workflow will trigger on all pull request review event types
-on: pull_request_review
+# Workflow will trigger on all pull request review event types and on  push to a 
+# pull request (synchronize) event type.
+# 
+# NOTE: Due to the sensitive nature of this workflow, it must always be run
+# against master AND with minimal permissions. These properties must always
+# be maintained!
+on: 
+  pull_request_review:
+  pull_request: 
+    types: [synchronize]
+
 
 jobs: 
   check-reviews:
     name: Checking reviewers 
     runs-on: ubuntu-latest
     steps:
-       # Check out base branch 
-      - name: Check out branch 
-        uses: actions/checkout@master
-        # Install Go  
-      - name: Installing Go
-        uses: actions/setup-go@v1
+      # Checkout master branch of Teleport repository. This is to prevent an
+      # attacker from submitting their own review assignment logic. 
+      - name: Checkout master branch 
+        uses: actions/checkout@v2
         with:
-          go-version: '1.15.13'
-      - name: Installing Go-github
-        run: go get github.com/google/go-github/v36
-        # Run command
-      - name: Assigning reviewers 
-        run: go run .github/workflows/bot.go check-reviewers
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GO111MODULE: auto
+          ref: jane/ci
+      - name: Installing the latest version of Go.
+        uses: actions/setup-go@v2
+        # Run "check-reviewers" subcommand on bot.
+      - name: Checking reviewers
+        run: cd .github/workflows/teleport-ci && go run cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }} --assignments="{\"0xblush\":[\"quinqu\"], \"quinqu\":[\"0xblush\", \"russjones\"]}" check-reviewers
+
