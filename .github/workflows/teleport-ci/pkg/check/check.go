@@ -110,7 +110,7 @@ func (c *Check) check(currentReviews map[string]review) error {
 		}
 	}
 	//  Check if author is an external contributor
-	if !c.isInternal() {
+	if !c.Environment.IsInternal(c.reviewContext.author) {
 		// If all required reviewers reviewed, check if commit shas are all the same
 		if c.hasNewCommit(currentReviews) {
 			err := c.invalidate(c.reviewContext.repoOwner, c.dismissMessage(), c.reviewContext.repoName, c.reviewContext.number, currentReviews, c.Environment.Client)
@@ -126,7 +126,6 @@ func (c *Check) check(currentReviews map[string]review) error {
 
 // invalidateApprovals dismisses all reviews on a pull request
 func invalidateApprovals(repoOwner, repoName, msg string, number int, reviews map[string]review, clt *github.Client) error {
-	// TODO: tag reviewers
 	for _, v := range reviews {
 		_, _, err := clt.PullRequests.DismissReview(context.TODO(), repoOwner, repoName, number, v.id, &github.PullRequestReviewDismissalRequest{Message: &msg})
 		if err != nil {
@@ -233,25 +232,6 @@ func (c *Check) setReviewContext(body []byte) error {
 		}
 	}
 	return trace.BadParameter("insufficient data obtained.")
-}
-
-// isInternal determines if an author is an internal contributor
-func (c *Check) isInternal() bool {
-	members, err := c.teamMembersFn(c.Environment.Org, c.Environment.TeamSlug, c.Environment.Client)
-	if err != nil {
-		log.Printf("failed to evaluate if author %v is part of %v: %v", c.reviewContext.author, c.Environment.TeamSlug, err)
-		return false
-	}
-	if !contains(members, c.reviewContext.author) {
-		return false
-	}
-
-	revs := c.Environment.GetReviewersForAuthor(c.reviewContext.author)
-	if revs == nil {
-
-		return false
-	}
-	return true
 }
 
 func contains(slice []string, value string) bool {

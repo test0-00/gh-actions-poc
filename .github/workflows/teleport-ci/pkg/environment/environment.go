@@ -99,6 +99,14 @@ func (e *Environment) GetReviewersForAuthor(user string) []string {
 	return value
 }
 
+func (e *Environment) IsInternal(author string) bool {
+	_, ok := e.reviewers[author]
+	// author is external or does not have set reviewers
+	if !ok {
+		return false
+	}
+	return true
+}
 /*
    Below are struct definitions used to transform pull request and review
    events (represented as a json object) into Golang structs. The way these objects are
