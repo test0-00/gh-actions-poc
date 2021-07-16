@@ -18,7 +18,6 @@ import (
 // Config is used to configure Check
 type Config struct {
 	EventPath   string
-	Reviewers   string
 	Environment *environment.Environment
 }
 
@@ -58,9 +57,6 @@ func (c *Config) CheckAndSetDefaults() error {
 	}
 	if c.EventPath == "" {
 		return trace.BadParameter("missing parameter EventPath.")
-	}
-	if c.Reviewers == "" {
-		return trace.BadParameter("missing parameter Reviewers.")
 	}
 	return nil
 }

@@ -22,60 +22,75 @@ func TestNewAssign(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Config with invalid path
-	config := Config{
-		EventPath:   "path/to/file.json",
-		Environment: env,
+	tests := []struct {
+		cfg       Config
+		fileInput string
+		eventPath string
+		checkErr  require.ErrorAssertionFunc
+		name      string
+		expected  *Assign
+	}{
+		{
+			cfg: Config{
+				Environment: env,
+			},
+			fileInput: validString,
+			checkErr:  require.Error,
+			eventPath: "bad/path.json",
+			name:      "Config with invalid event path.",
+			expected:  nil,
+		},
+		{
+			cfg: Config{
+				Environment: env,
+			},
+			fileInput: validString,
+			checkErr:  require.NoError,
+			name:      "Valid configuration.",
+			expected:  &Assign{Environment: env, pullContext: &PullRequestContext{number: 2, author: "Codertocat", repoName: "Hello-World", repoOwner: "Codertocat"}},
+		},
+		{
+			cfg: Config{
+				Environment: env,
+			},
+			fileInput: invalidString,
+			name:      "Valid config, invalid event.",
+			checkErr:  require.Error,
+			expected:  nil,
+		},
+		{
+			cfg: Config{
+				Environment: env,
+			},
+			fileInput: invalidString,
+			name:      "Invalid config, missing Reviewers parameter.",
+			checkErr:  require.Error,
+			expected:  nil,
+		},
 	}
-	assign, err := New(config)
-	require.Error(t, err)
-	require.Nil(t, assign)
 
-	f, err := ioutil.TempFile("", "assign")
-	require.NoError(t, err)
-	filePath := f.Name()
-	defer os.Remove(f.Name())
-	_, err = f.Write([]byte(validString))
-	require.NoError(t, err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Set up file
+			f, err := ioutil.TempFile("", "assign")
+			require.NoError(t, err)
+			filePath := f.Name()
+			defer os.Remove(f.Name())
+			// Write payload to file
+			_, err = f.Write([]byte(test.fileInput))
+			require.NoError(t, err)
+			if test.eventPath != "" {
+				test.cfg.EventPath = test.eventPath
+			} else {
+				test.cfg.EventPath = filePath
+			}
+			// Test New
+			out, err := New(test.cfg)
+			test.checkErr(t, err)
+			require.Equal(t, test.expected, out)
 
-	// Config with a nil Environment and valid path
-	config = Config{
-		EventPath: filePath,
+		})
 	}
-	assign, err = New(config)
-	require.Error(t, err)
-	require.Nil(t, assign)
-
-	// Valid config
-	f, err = ioutil.TempFile("", "assign")
-	require.NoError(t, err)
-	filePath = f.Name()
-	defer os.Remove(f.Name())
-	_, err = f.Write([]byte(validString))
-	require.NoError(t, err)
-	config = Config{
-		EventPath:   filePath,
-		Environment: env,
-		Reviewers: `{"author": ["reviewer"]}`,
-	}
-	assign, err = New(config)
-	require.NoError(t, err)
-	require.Equal(t, env, assign.Environment)
-
-	// Valid config, wrong event (invalid json format)
-	f, err = ioutil.TempFile("", "invalid-assign")
-	require.NoError(t, err)
-	filePath = f.Name()
-	defer os.Remove(f.Name())
-	_, err = f.Write([]byte(invalidString))
-	require.NoError(t, err)
-	config = Config{
-		EventPath:   filePath,
-		Environment: env,
-	}
-	assign, err = New(config)
-	require.Error(t, err)
-	require.Nil(t, assign)
 }
 
 // TestNewPullRequestContextValid tests the unmarshalling of a valid pull request event
